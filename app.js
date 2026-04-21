@@ -254,6 +254,7 @@ function initAddForm() {
     const previewActions = document.getElementById('preview-actions');
     const saveBtn = document.getElementById('save-card-btn');
     const discardBtn = document.getElementById('discard-card-btn');
+    const refreshBtn = document.getElementById('refresh-example-btn');
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -291,6 +292,32 @@ function initAddForm() {
 
     previewCard.addEventListener('click', () => {
         previewCard.classList.toggle('flipped');
+    });
+
+    refreshBtn.addEventListener('click', async () => {
+        if (!pendingCard) return;
+
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = '...';
+
+        try {
+            const exampleData = await refreshExample(pendingCard.dutch, pendingCard.english);
+            pendingCard.example = exampleData.dutch;
+            pendingCard.exampleTranslation = exampleData.english;
+
+            previewCard.querySelector('.example-sentence').textContent = exampleData.dutch;
+            previewCard.querySelector('.example-translation').textContent = exampleData.english;
+
+            // Flip to back to show new example
+            if (!previewCard.classList.contains('flipped')) {
+                previewCard.classList.add('flipped');
+            }
+        } catch (error) {
+            showToast('Could not get new example', 'error');
+        } finally {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = '↻';
+        }
     });
 
     saveBtn.addEventListener('click', async () => {
@@ -360,6 +387,18 @@ async function translateWord(word) {
     };
 }
 
+// Refresh example sentence (tries Tatoeba first, then generates new one)
+async function refreshExample(dutchWord, englishTranslation) {
+    // First try Tatoeba for a different example
+    try {
+        const exampleData = await fetchExampleSentence(dutchWord, true); // true = get random
+        return exampleData;
+    } catch {
+        // Generate a new example
+        return await generateExampleSentence(dutchWord, englishTranslation);
+    }
+}
+
 // Generate a meaningful example sentence when Tatoeba has none
 async function generateExampleSentence(dutchWord, englishTranslation) {
     // Create a simple English sentence that demonstrates the word's meaning
@@ -371,10 +410,15 @@ async function generateExampleSentence(dutchWord, englishTranslation) {
         `I want something ${eng}.`,
         `That is ${eng}.`,
         `We need more ${eng} options.`,
-        `It's important to be ${eng}.`
+        `It's important to be ${eng}.`,
+        `She described it as ${eng}.`,
+        `The ${eng} choice is better.`,
+        `I find this very ${eng}.`,
+        `They prefer ${eng} materials.`,
+        `Is this ${eng} enough?`
     ];
 
-    // Pick a template
+    // Pick a random template
     const englishExample = templates[Math.floor(Math.random() * templates.length)];
 
     // Translate the English example to Dutch
@@ -401,9 +445,9 @@ async function generateExampleSentence(dutchWord, englishTranslation) {
 }
 
 // Fetch example sentence from Tatoeba (free sentence database)
-async function fetchExampleSentence(word) {
+async function fetchExampleSentence(word, randomize = false) {
     // Include translations in the response
-    const url = `https://tatoeba.org/en/api_v0/search?from=nld&to=eng&query=${encodeURIComponent(word)}&limit=10&trans_filter=limit`;
+    const url = `https://tatoeba.org/en/api_v0/search?from=nld&to=eng&query=${encodeURIComponent(word)}&limit=20&trans_filter=limit`;
     const response = await fetch(url);
 
     if (!response.ok) {
