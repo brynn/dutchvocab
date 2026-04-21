@@ -403,46 +403,38 @@ async function refreshExample(dutchWord, englishTranslation) {
 
 // Generate a meaningful example sentence when Tatoeba has none
 async function generateExampleSentence(dutchWord, englishTranslation) {
-    // Create a simple English sentence that demonstrates the word's meaning
-    const eng = englishTranslation.toLowerCase();
-
-    // Templates that work for different word types
-    const templates = [
-        `This product is very ${eng}.`,
-        `I want something ${eng}.`,
-        `That is ${eng}.`,
-        `We need more ${eng} options.`,
-        `It's important to be ${eng}.`,
-        `She described it as ${eng}.`,
-        `The ${eng} choice is better.`,
-        `I find this very ${eng}.`,
-        `They prefer ${eng} materials.`,
-        `Is this ${eng} enough?`
+    // Dutch sentence templates using the word directly
+    const dutchTemplates = [
+        `Dit is erg ${dutchWord}.`,
+        `Ik vind het ${dutchWord}.`,
+        `Het is belangrijk om ${dutchWord} te zijn.`,
+        `Dat was heel ${dutchWord}.`,
+        `Ze vonden het ${dutchWord}.`
     ];
 
-    // Pick a random template
-    const englishExample = templates[Math.floor(Math.random() * templates.length)];
+    // Pick a random Dutch template
+    const dutchExample = dutchTemplates[Math.floor(Math.random() * dutchTemplates.length)];
 
-    // Translate the English example to Dutch
+    // Translate the Dutch sentence to English for the translation
     try {
-        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(englishExample)}&langpair=en|nl`;
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(dutchExample)}&langpair=nl|en`;
         const response = await fetch(url);
         const data = await response.json();
 
         if (data.responseStatus === 200) {
             return {
-                dutch: data.responseData.translatedText,
-                english: englishExample
+                dutch: dutchExample,
+                english: data.responseData.translatedText
             };
         }
     } catch {
         // Ignore errors
     }
 
-    // Final fallback with the Dutch word inserted
+    // Final fallback
     return {
         dutch: `Dit is ${dutchWord}.`,
-        english: `This is ${eng}.`
+        english: `This is ${englishTranslation.toLowerCase()}.`
     };
 }
 
