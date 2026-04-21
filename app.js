@@ -16,15 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTabs();
     initAddForm();
     initReview();
-    initSettings();
     initCardList();
-
-    // Check for API key on first load
-    const apiKey = localStorage.getItem('claude_api_key');
-    if (!apiKey) {
-        showToast('Please set your Claude API key in settings', 'error');
-        document.getElementById('settings-modal').classList.remove('hidden');
-    }
 });
 
 // IndexedDB Setup
@@ -192,17 +184,10 @@ function initAddForm() {
 
         if (!word) return;
 
-        const apiKey = localStorage.getItem('claude_api_key');
-        if (!apiKey) {
-            showToast('Please set your API key in settings', 'error');
-            document.getElementById('settings-modal').classList.remove('hidden');
-            return;
-        }
-
         setLoading(true);
 
         try {
-            const result = await translateWord(word, apiKey);
+            const result = await translateWord(word);
             pendingCard = {
                 dutch: result.dutch,
                 english: result.english,
@@ -255,47 +240,39 @@ function setLoading(loading) {
     btnLoading.classList.toggle('hidden', !loading);
 }
 
-// Claude API
-async function translateWord(word, apiKey) {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 256,
-            messages: [{
-                role: 'user',
-                content: `Translate the Dutch word "${word}" to English and provide an example sentence in Dutch that uses the word naturally.
-
-Respond ONLY with valid JSON in this exact format (no markdown, no explanation):
-{"dutch":"${word}","english":"[translation]","example":"[Dutch example sentence]"}`
-            }]
-        })
-    });
+// Translation API (MyMemory - free, no API key required)
+async function translateWord(word) {
+    // Get translation from MyMemory API
+    const translationUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=nl|en`;
+    const response = await fetch(translationUrl);
 
     if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error?.message || `API error: ${response.status}`);
+        throw new Error('Translation service unavailable');
     }
 
     const data = await response.json();
-    const text = data.content[0].text.trim();
 
-    try {
-        return JSON.parse(text);
-    } catch {
-        // Try to extract JSON from the response
-        const match = text.match(/\{[\s\S]*\}/);
-        if (match) {
-            return JSON.parse(match[0]);
-        }
-        throw new Error('Invalid response from API');
+    if (data.responseStatus !== 200) {
+        throw new Error(data.responseDetails || 'Translation failed');
     }
+
+    const english = data.responseData.translatedText;
+
+    // Generate a simple example sentence
+    // Common Dutch sentence patterns
+    const examples = [
+        `Ik gebruik "${word}" in een zin.`,
+        `Het woord "${word}" is belangrijk.`,
+        `Kun je "${word}" voor mij herhalen?`,
+        `Ik heb "${word}" vandaag geleerd.`
+    ];
+    const example = examples[Math.floor(Math.random() * examples.length)];
+
+    return {
+        dutch: word,
+        english: english,
+        example: example
+    };
 }
 
 // Review System
@@ -406,48 +383,7 @@ async function handleDeleteCard(id) {
     }
 }
 
-// Settings
-function initSettings() {
-    const settingsBtn = document.getElementById('settings-btn');
-    const settingsModal = document.getElementById('settings-modal');
-    const settingsForm = document.getElementById('settings-form');
-    const cancelBtn = document.getElementById('cancel-settings');
-    const apiKeyInput = document.getElementById('api-key');
-
-    // Load saved key
-    const savedKey = localStorage.getItem('claude_api_key');
-    if (savedKey) {
-        apiKeyInput.value = savedKey;
-    }
-
-    settingsBtn.addEventListener('click', () => {
-        settingsModal.classList.remove('hidden');
-    });
-
-    cancelBtn.addEventListener('click', () => {
-        settingsModal.classList.add('hidden');
-    });
-
-    settingsModal.addEventListener('click', (e) => {
-        if (e.target === settingsModal) {
-            settingsModal.classList.add('hidden');
-        }
-    });
-
-    settingsForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const apiKey = apiKeyInput.value.trim();
-
-        if (apiKey) {
-            localStorage.setItem('claude_api_key', apiKey);
-            showToast('API key saved', 'success');
-        } else {
-            localStorage.removeItem('claude_api_key');
-        }
-
-        settingsModal.classList.add('hidden');
-    });
-}
+// Settings - removed, no longer needed
 
 // Toast Notifications
 function showToast(message, type = '') {

@@ -16,7 +16,6 @@
         <!-- Header -->
         <header>
             <h1>Dutch Vocab</h1>
-            <button id="settings-btn" aria-label="Settings">⚙️</button>
         </header>
 
         <!-- Navigation Tabs -->
@@ -99,27 +98,6 @@
             </div>
             <div id="card-list"></div>
         </section>
-
-        <!-- Settings Modal -->
-        <div id="settings-modal" class="modal hidden">
-            <div class="modal-content">
-                <h2>Settings</h2>
-                <form id="settings-form">
-                    <label for="api-key">Claude API Key</label>
-                    <input
-                        type="password"
-                        id="api-key"
-                        placeholder="sk-ant-..."
-                        autocomplete="off"
-                    >
-                    <p class="help-text">Your key is stored locally and never sent anywhere except Anthropic's API.</p>
-                    <div class="modal-buttons">
-                        <button type="button" id="cancel-settings" class="secondary">Cancel</button>
-                        <button type="submit" class="primary">Save</button>
-                    </div>
-                </form>
-            </div>
-        </div>
 
         <!-- Toast Notifications -->
         <div id="toast" class="toast hidden"></div>
