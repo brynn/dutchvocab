@@ -234,6 +234,14 @@ button.secondary {
     line-height: 1.6;
 }
 
+.example-translation {
+    font-size: 0.9rem;
+    color: var(--text);
+    margin-top: 8px;
+    line-height: 1.5;
+    opacity: 0.8;
+}
+
 .tap-hint {
     font-size: 0.85rem;
     color: var(--text-muted);

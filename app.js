@@ -51,6 +51,7 @@ async function saveCard(card) {
             dutch: card.dutch,
             english: card.english,
             example: card.example,
+            exampleTranslation: card.exampleTranslation || '',
             createdAt: Date.now(),
             nextReview: Date.now(),
             interval: 1, // days
@@ -191,13 +192,15 @@ function initAddForm() {
             pendingCard = {
                 dutch: result.dutch,
                 english: result.english,
-                example: result.example
+                example: result.example,
+                exampleTranslation: result.exampleTranslation
             };
 
             // Show preview
             previewCard.querySelector('.dutch-word').textContent = result.dutch;
             previewCard.querySelector('.english-word').textContent = result.english;
             previewCard.querySelector('.example-sentence').textContent = result.example;
+            previewCard.querySelector('.example-translation').textContent = result.exampleTranslation;
             previewCard.classList.remove('hidden', 'flipped');
             previewActions.classList.remove('hidden');
 
@@ -258,24 +261,30 @@ async function translateWord(word) {
 
     const english = data.responseData.translatedText;
 
-    // Fetch real example sentence from Tatoeba
+    // Fetch real example sentence from Tatoeba (with English translation)
     let example = '';
+    let exampleTranslation = '';
     try {
-        example = await fetchExampleSentence(word);
+        const exampleData = await fetchExampleSentence(word);
+        example = exampleData.dutch;
+        exampleTranslation = exampleData.english;
     } catch {
         example = `Ik heb "${word}" vandaag geleerd.`;
+        exampleTranslation = `I learned "${word}" today.`;
     }
 
     return {
         dutch: word,
         english: english,
-        example: example
+        example: example,
+        exampleTranslation: exampleTranslation
     };
 }
 
 // Fetch example sentence from Tatoeba (free sentence database)
 async function fetchExampleSentence(word) {
-    const url = `https://tatoeba.org/en/api_v0/search?from=nld&query=${encodeURIComponent(word)}&limit=10`;
+    // Include translations in the response
+    const url = `https://tatoeba.org/en/api_v0/search?from=nld&to=eng&query=${encodeURIComponent(word)}&limit=10&trans_filter=limit`;
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -285,16 +294,22 @@ async function fetchExampleSentence(word) {
     const data = await response.json();
 
     if (data.results && data.results.length > 0) {
-        // Find sentences that contain the exact word (case-insensitive)
+        // Find sentences that contain the exact word and have English translations
         const wordLower = word.toLowerCase();
         const matching = data.results.filter(r =>
-            r.text.toLowerCase().includes(wordLower)
+            r.text.toLowerCase().includes(wordLower) &&
+            r.translations && r.translations.length > 0 &&
+            r.translations[0].length > 0
         );
 
         if (matching.length > 0) {
             // Pick a random matching sentence
             const sentence = matching[Math.floor(Math.random() * matching.length)];
-            return sentence.text;
+            const englishTranslation = sentence.translations[0][0].text;
+            return {
+                dutch: sentence.text,
+                english: englishTranslation
+            };
         }
     }
 
@@ -364,6 +379,7 @@ function showNextCard() {
     reviewCard.querySelector('.dutch-word').textContent = card.dutch;
     reviewCard.querySelector('.english-word').textContent = card.english;
     reviewCard.querySelector('.example-sentence').textContent = card.example;
+    reviewCard.querySelector('.example-translation').textContent = card.exampleTranslation || '';
 
     document.getElementById('current-card').textContent = currentReviewIndex + 1;
     progressFill.style.width = `${((currentReviewIndex) / reviewQueue.length) * 100}%`;
