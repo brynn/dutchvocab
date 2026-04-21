@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ff6b35">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Dutch Vocab</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header>
+            <h1>Dutch Vocab</h1>
+            <button id="settings-btn" aria-label="Settings">⚙️</button>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav>
+            <button class="tab-btn active" data-tab="add">Add Word</button>
+            <button class="tab-btn" data-tab="review">Review</button>
+            <button class="tab-btn" data-tab="list">All Cards</button>
+        </nav>
+
+        <!-- Add Word Tab -->
+        <section id="add-tab" class="tab-content active">
+            <form id="add-form">
+                <input
+                    type="text"
+                    id="word-input"
+                    placeholder="Enter a Dutch word..."
+                    autocomplete="off"
+                    autocapitalize="none"
+                    spellcheck="false"
+                >
+                <button type="submit" id="add-btn">
+                    <span class="btn-text">Add Card</span>
+                    <span class="btn-loading hidden">Loading...</span>
+                </button>
+            </form>
+            <div id="preview-card" class="card hidden">
+                <div class="card-inner">
+                    <div class="card-front">
+                        <p class="dutch-word"></p>
+                    </div>
+                    <div class="card-back">
+                        <p class="english-word"></p>
+                        <p class="example-sentence"></p>
+                    </div>
+                </div>
+            </div>
+            <div id="preview-actions" class="hidden">
+                <button id="save-card-btn" class="primary">Save Card</button>
+                <button id="discard-card-btn" class="secondary">Discard</button>
+            </div>
+        </section>
+
+        <!-- Review Tab -->
+        <section id="review-tab" class="tab-content">
+            <div id="review-empty" class="empty-state">
+                <p>No cards to review!</p>
+                <p class="subtitle">Add some words to get started.</p>
+            </div>
+            <div id="review-area" class="hidden">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <p class="review-count"><span id="current-card">1</span> / <span id="total-cards">0</span></p>
+                <div id="review-card" class="card">
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <p class="dutch-word"></p>
+                            <p class="tap-hint">Tap to flip</p>
+                        </div>
+                        <div class="card-back">
+                            <p class="english-word"></p>
+                            <p class="example-sentence"></p>
+                        </div>
+                    </div>
+                </div>
+                <div id="review-buttons" class="hidden">
+                    <button id="wrong-btn" class="wrong">Again</button>
+                    <button id="hard-btn" class="hard">Hard</button>
+                    <button id="good-btn" class="good">Good</button>
+                    <button id="easy-btn" class="easy">Easy</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- All Cards Tab -->
+        <section id="list-tab" class="tab-content">
+            <div id="list-empty" class="empty-state">
+                <p>No cards yet!</p>
+                <p class="subtitle">Add some Dutch words to build your vocabulary.</p>
+            </div>
+            <div id="card-list"></div>
+        </section>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Settings</h2>
+                <form id="settings-form">
+                    <label for="api-key">Claude API Key</label>
+                    <input
+                        type="password"
+                        id="api-key"
+                        placeholder="sk-ant-..."
+                        autocomplete="off"
+                    >
+                    <p class="help-text">Your key is stored locally and never sent anywhere except Anthropic's API.</p>
+                    <div class="modal-buttons">
+                        <button type="button" id="cancel-settings" class="secondary">Cancel</button>
+                        <button type="submit" class="primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
