@@ -294,7 +294,8 @@ function initAddForm() {
         previewCard.classList.toggle('flipped');
     });
 
-    refreshBtn.addEventListener('click', async () => {
+    refreshBtn.addEventListener('click', async (e) => {
+        e.stopPropagation(); // Prevent card flip
         if (!pendingCard) return;
 
         refreshBtn.disabled = true;
@@ -313,6 +314,7 @@ function initAddForm() {
                 previewCard.classList.add('flipped');
             }
         } catch (error) {
+            console.error('Refresh failed:', error);
             showToast('Could not get new example', 'error');
         } finally {
             refreshBtn.disabled = false;
