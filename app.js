@@ -54,9 +54,11 @@ async function saveCard(card) {
             exampleTranslation: card.exampleTranslation || '',
             createdAt: Date.now(),
             nextReview: Date.now(),
-            interval: 1, // days
-            easeFactor: 2.5,
-            repetitions: 0
+            // FSRS parameters
+            stability: 0,      // How long memory lasts (days)
+            difficulty: 0,     // Card difficulty (1-10)
+            reps: 0,           // Number of reviews
+            lastReview: null   // Timestamp of last review
         };
 
         const request = store.add(cardData);
@@ -104,42 +106,117 @@ async function deleteCard(id) {
     });
 }
 
-// Spaced Repetition (SM-2 algorithm simplified)
+// FSRS-4.5 Algorithm (Free Spaced Repetition Scheduler)
+// Based on memory research - more accurate than SM-2
+
+const FSRS = {
+    // Default parameters (from FSRS research)
+    w: [0.4, 0.6, 2.4, 5.8, 4.93, 0.94, 0.86, 0.01, 1.49, 0.14, 0.94, 2.18, 0.05, 0.34, 1.26, 0.29, 2.61],
+
+    // Desired retention rate (90% = you'll remember 90% of cards when they come up)
+    requestedRetention: 0.9,
+
+    // Calculate initial stability based on first rating
+    initStability(rating) {
+        // rating: 1=again, 2=hard, 3=good, 4=easy
+        return this.w[rating - 1];
+    },
+
+    // Calculate initial difficulty based on first rating
+    initDifficulty(rating) {
+        return Math.min(10, Math.max(1,
+            this.w[4] - (rating - 3) * this.w[5]
+        ));
+    },
+
+    // Update difficulty after review
+    nextDifficulty(d, rating) {
+        const nextD = d - this.w[6] * (rating - 3);
+        // Mean reversion to keep difficulty from extremes
+        return Math.min(10, Math.max(1,
+            this.w[7] * this.initDifficulty(4) + (1 - this.w[7]) * nextD
+        ));
+    },
+
+    // Calculate retrievability (probability of recall)
+    retrievability(stability, elapsedDays) {
+        return Math.pow(1 + elapsedDays / (9 * stability), -1);
+    },
+
+    // Calculate next stability after successful recall
+    nextStability(d, s, r, rating) {
+        const hardPenalty = rating === 2 ? this.w[15] : 1;
+        const easyBonus = rating === 4 ? this.w[16] : 1;
+
+        return s * (1 +
+            Math.exp(this.w[8]) *
+            (11 - d) *
+            Math.pow(s, -this.w[9]) *
+            (Math.exp((1 - r) * this.w[10]) - 1) *
+            hardPenalty *
+            easyBonus
+        );
+    },
+
+    // Calculate stability after forgetting (rating = 1)
+    nextStabilityAfterFail(d, s, r) {
+        return this.w[11] *
+            Math.pow(d, -this.w[12]) *
+            (Math.pow(s + 1, this.w[13]) - 1) *
+            Math.exp((1 - r) * this.w[14]);
+    },
+
+    // Calculate days until next review based on stability
+    nextInterval(stability) {
+        return stability * 9 * (1 / this.requestedRetention - 1);
+    }
+};
+
 function calculateNextReview(card, quality) {
-    // quality: 0 = again, 1 = hard, 2 = good, 3 = easy
-    let { interval, easeFactor, repetitions } = card;
+    // quality: 0=again, 1=hard, 2=good, 3=easy
+    // Convert to FSRS rating: 1=again, 2=hard, 3=good, 4=easy
+    const rating = quality + 1;
 
-    if (quality < 2) {
-        // Failed - reset
-        repetitions = 0;
-        interval = 1;
+    const now = Date.now();
+    let { stability, difficulty, reps, lastReview } = card;
+
+    // Calculate elapsed time since last review
+    const elapsedDays = lastReview ? (now - lastReview) / (24 * 60 * 60 * 1000) : 0;
+
+    if (reps === 0) {
+        // First review - initialize FSRS parameters
+        stability = FSRS.initStability(rating);
+        difficulty = FSRS.initDifficulty(rating);
     } else {
-        // Passed
-        if (repetitions === 0) {
-            interval = 1;
-        } else if (repetitions === 1) {
-            interval = 6;
+        // Calculate current retrievability
+        const r = FSRS.retrievability(stability, elapsedDays);
+
+        // Update difficulty
+        difficulty = FSRS.nextDifficulty(difficulty, rating);
+
+        // Update stability based on whether recall was successful
+        if (rating === 1) {
+            // Forgot - use failure formula
+            stability = FSRS.nextStabilityAfterFail(difficulty, stability, r);
         } else {
-            interval = Math.round(interval * easeFactor);
+            // Remembered - use success formula
+            stability = FSRS.nextStability(difficulty, stability, r, rating);
         }
-        repetitions++;
-
-        // Adjust ease factor
-        easeFactor = easeFactor + (0.1 - (3 - quality) * (0.08 + (3 - quality) * 0.02));
-        easeFactor = Math.max(1.3, easeFactor);
     }
 
-    // Bonus for easy
-    if (quality === 3) {
-        interval = Math.round(interval * 1.3);
-    }
+    // Calculate next interval
+    let interval = FSRS.nextInterval(stability);
+
+    // Minimum 1 day, round to reasonable precision
+    interval = Math.max(1, Math.round(interval * 10) / 10);
 
     return {
         ...card,
-        interval,
-        easeFactor,
-        repetitions,
-        nextReview: Date.now() + interval * 24 * 60 * 60 * 1000
+        stability,
+        difficulty,
+        reps: reps + 1,
+        lastReview: now,
+        nextReview: now + interval * 24 * 60 * 60 * 1000
     };
 }
 
