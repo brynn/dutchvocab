@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dutch-vocab-v5';
+const CACHE_NAME = 'dutch-vocab-v6';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
