@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -11,12 +12,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="./manifest.json">
-    <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-    <link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="./icon-512.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-512.png">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div id="app">
         <!-- Header -->
@@ -34,14 +34,8 @@
         <!-- Add Word Tab -->
         <section id="add-tab" class="tab-content active">
             <form id="add-form">
-                <input
-                    type="text"
-                    id="word-input"
-                    placeholder="Enter a Dutch word..."
-                    autocomplete="off"
-                    autocapitalize="none"
-                    spellcheck="false"
-                >
+                <input type="text" id="word-input" placeholder="Enter a Dutch word..." autocomplete="off"
+                    autocapitalize="none" spellcheck="false">
                 <button type="submit" id="add-btn">
                     <span class="btn-text">Add Card</span>
                     <span class="btn-loading hidden">Loading...</span>
@@ -112,4 +106,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>
