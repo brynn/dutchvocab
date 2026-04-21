@@ -258,21 +258,47 @@ async function translateWord(word) {
 
     const english = data.responseData.translatedText;
 
-    // Generate a simple example sentence
-    // Common Dutch sentence patterns
-    const examples = [
-        `Ik gebruik "${word}" in een zin.`,
-        `Het woord "${word}" is belangrijk.`,
-        `Kun je "${word}" voor mij herhalen?`,
-        `Ik heb "${word}" vandaag geleerd.`
-    ];
-    const example = examples[Math.floor(Math.random() * examples.length)];
+    // Fetch real example sentence from Tatoeba
+    let example = '';
+    try {
+        example = await fetchExampleSentence(word);
+    } catch {
+        example = `Ik heb "${word}" vandaag geleerd.`;
+    }
 
     return {
         dutch: word,
         english: english,
         example: example
     };
+}
+
+// Fetch example sentence from Tatoeba (free sentence database)
+async function fetchExampleSentence(word) {
+    const url = `https://tatoeba.org/en/api_v0/search?from=nld&query=${encodeURIComponent(word)}&limit=10`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        throw new Error('Could not fetch example');
+    }
+
+    const data = await response.json();
+
+    if (data.results && data.results.length > 0) {
+        // Find sentences that contain the exact word (case-insensitive)
+        const wordLower = word.toLowerCase();
+        const matching = data.results.filter(r =>
+            r.text.toLowerCase().includes(wordLower)
+        );
+
+        if (matching.length > 0) {
+            // Pick a random matching sentence
+            const sentence = matching[Math.floor(Math.random() * matching.length)];
+            return sentence.text;
+        }
+    }
+
+    throw new Error('No examples found');
 }
 
 // Review System
