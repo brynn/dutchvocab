@@ -269,8 +269,10 @@ async function translateWord(word) {
         example = exampleData.dutch;
         exampleTranslation = exampleData.english;
     } catch {
-        example = `Ik heb "${word}" vandaag geleerd.`;
-        exampleTranslation = `I learned "${word}" today.`;
+        // Generate a meaningful example sentence using the translation
+        const generated = await generateExampleSentence(word, english);
+        example = generated.dutch;
+        exampleTranslation = generated.english;
     }
 
     return {
@@ -278,6 +280,46 @@ async function translateWord(word) {
         english: english,
         example: example,
         exampleTranslation: exampleTranslation
+    };
+}
+
+// Generate a meaningful example sentence when Tatoeba has none
+async function generateExampleSentence(dutchWord, englishTranslation) {
+    // Create a simple English sentence that demonstrates the word's meaning
+    const eng = englishTranslation.toLowerCase();
+
+    // Templates that work for different word types
+    const templates = [
+        `This product is very ${eng}.`,
+        `I want something ${eng}.`,
+        `That is ${eng}.`,
+        `We need more ${eng} options.`,
+        `It's important to be ${eng}.`
+    ];
+
+    // Pick a template
+    const englishExample = templates[Math.floor(Math.random() * templates.length)];
+
+    // Translate the English example to Dutch
+    try {
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(englishExample)}&langpair=en|nl`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.responseStatus === 200) {
+            return {
+                dutch: data.responseData.translatedText,
+                english: englishExample
+            };
+        }
+    } catch {
+        // Ignore errors
+    }
+
+    // Final fallback with the Dutch word inserted
+    return {
+        dutch: `Dit is ${dutchWord}.`,
+        english: `This is ${eng}.`
     };
 }
 
