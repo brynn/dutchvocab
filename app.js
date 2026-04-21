@@ -50,8 +50,6 @@ async function saveCard(card) {
         const cardData = {
             dutch: card.dutch,
             english: card.english,
-            example: card.example,
-            exampleTranslation: card.exampleTranslation || '',
             createdAt: Date.now(),
             nextReview: Date.now(),
             // FSRS parameters
@@ -254,7 +252,6 @@ function initAddForm() {
     const previewActions = document.getElementById('preview-actions');
     const saveBtn = document.getElementById('save-card-btn');
     const discardBtn = document.getElementById('discard-card-btn');
-    const refreshBtn = document.getElementById('refresh-example-btn');
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -269,16 +266,12 @@ function initAddForm() {
             const result = await translateWord(word);
             pendingCard = {
                 dutch: result.dutch,
-                english: result.english,
-                example: result.example,
-                exampleTranslation: result.exampleTranslation
+                english: result.english
             };
 
             // Show preview
             previewCard.querySelector('.dutch-word').textContent = result.dutch;
             previewCard.querySelector('.english-word').textContent = result.english;
-            previewCard.querySelector('.example-sentence').textContent = result.example || 'No example available';
-            previewCard.querySelector('.example-translation').textContent = result.exampleTranslation || '';
             previewCard.classList.remove('hidden', 'flipped');
             previewActions.classList.remove('hidden');
 
@@ -292,34 +285,6 @@ function initAddForm() {
 
     previewCard.addEventListener('click', () => {
         previewCard.classList.toggle('flipped');
-    });
-
-    refreshBtn.addEventListener('click', async (e) => {
-        e.stopPropagation(); // Prevent card flip
-        if (!pendingCard) return;
-
-        refreshBtn.disabled = true;
-        refreshBtn.textContent = '...';
-
-        try {
-            const exampleData = await refreshExample(pendingCard.dutch, pendingCard.english);
-            pendingCard.example = exampleData.dutch;
-            pendingCard.exampleTranslation = exampleData.english;
-
-            previewCard.querySelector('.example-sentence').textContent = exampleData.dutch;
-            previewCard.querySelector('.example-translation').textContent = exampleData.english;
-
-            // Flip to back to show new example
-            if (!previewCard.classList.contains('flipped')) {
-                previewCard.classList.add('flipped');
-            }
-        } catch (error) {
-            console.error('Refresh failed:', error);
-            showToast('Could not get new example', 'error');
-        } finally {
-            refreshBtn.disabled = false;
-            refreshBtn.textContent = '↻';
-        }
     });
 
     saveBtn.addEventListener('click', async () => {
@@ -385,83 +350,10 @@ async function translateWord(word) {
         english = data.responseData.translatedText;
     }
 
-    // Fetch real example sentence from Tatoeba (with English translation)
-    let example = '';
-    let exampleTranslation = '';
-    try {
-        const exampleData = await fetchExampleSentence(word);
-        example = exampleData.dutch;
-        exampleTranslation = exampleData.english;
-    } catch {
-        // Generate a meaningful example sentence using the translation
-        const generated = await generateExampleSentence(word, english);
-        example = generated.dutch;
-        exampleTranslation = generated.english;
-    }
-
     return {
         dutch: word,
-        english: english,
-        example: example,
-        exampleTranslation: exampleTranslation
+        english: english
     };
-}
-
-// Refresh example sentence (tries Tatoeba first, then generates new one)
-async function refreshExample(dutchWord, englishTranslation) {
-    // First try Tatoeba for a different example
-    try {
-        const exampleData = await fetchExampleSentence(dutchWord, true); // true = get random
-        return exampleData;
-    } catch {
-        // Generate a new example
-        return await generateExampleSentence(dutchWord, englishTranslation);
-    }
-}
-
-// Generate a meaningful example sentence when Tatoeba has none
-async function generateExampleSentence(dutchWord, englishTranslation) {
-    // No reliable way to generate grammatical examples without knowing part of speech
-    // Return empty - better to have no example than a bad one
-    return {
-        dutch: '',
-        english: ''
-    };
-}
-
-// Fetch example sentence from Tatoeba (free sentence database)
-async function fetchExampleSentence(word, randomize = false) {
-    // Include translations in the response
-    const url = `https://tatoeba.org/en/api_v0/search?from=nld&to=eng&query=${encodeURIComponent(word)}&limit=20&trans_filter=limit`;
-    const response = await fetch(url);
-
-    if (!response.ok) {
-        throw new Error('Could not fetch example');
-    }
-
-    const data = await response.json();
-
-    if (data.results && data.results.length > 0) {
-        // Find sentences that contain the exact word and have English translations
-        const wordLower = word.toLowerCase();
-        const matching = data.results.filter(r =>
-            r.text.toLowerCase().includes(wordLower) &&
-            r.translations && r.translations.length > 0 &&
-            r.translations[0].length > 0
-        );
-
-        if (matching.length > 0) {
-            // Pick a random matching sentence
-            const sentence = matching[Math.floor(Math.random() * matching.length)];
-            const englishTranslation = sentence.translations[0][0].text;
-            return {
-                dutch: sentence.text,
-                english: englishTranslation
-            };
-        }
-    }
-
-    throw new Error('No examples found');
 }
 
 // Review System
@@ -526,8 +418,6 @@ function showNextCard() {
     reviewButtons.classList.add('hidden');
     reviewCard.querySelector('.dutch-word').textContent = card.dutch;
     reviewCard.querySelector('.english-word').textContent = card.english;
-    reviewCard.querySelector('.example-sentence').textContent = card.example || 'No example available';
-    reviewCard.querySelector('.example-translation').textContent = card.exampleTranslation || '';
 
     document.getElementById('current-card').textContent = currentReviewIndex + 1;
     progressFill.style.width = `${((currentReviewIndex) / reviewQueue.length) * 100}%`;

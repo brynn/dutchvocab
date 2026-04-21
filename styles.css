@@ -224,22 +224,6 @@ button.secondary {
 .english-word {
     font-size: 1.5rem;
     font-weight: 600;
-    margin-bottom: 16px;
-}
-
-.example-sentence {
-    font-size: 1rem;
-    color: var(--text-muted);
-    font-style: italic;
-    line-height: 1.6;
-}
-
-.example-translation {
-    font-size: 0.9rem;
-    color: var(--text);
-    margin-top: 8px;
-    line-height: 1.5;
-    opacity: 0.8;
 }
 
 .tap-hint {
@@ -252,12 +236,6 @@ button.secondary {
 #preview-actions {
     display: flex;
     gap: 12px;
-}
-
-#refresh-example-btn {
-    padding: 14px 16px;
-    font-size: 1.2rem;
-    min-width: 50px;
 }
 
 #preview-actions button {
