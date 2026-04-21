@@ -349,23 +349,41 @@ function setLoading(loading) {
     btnLoading.classList.toggle('hidden', !loading);
 }
 
-// Translation API (MyMemory - free, no API key required)
+// Translation API - tries multiple services for best results
 async function translateWord(word) {
-    // Get translation from MyMemory API
-    const translationUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=nl|en`;
-    const response = await fetch(translationUrl);
+    let english = null;
 
-    if (!response.ok) {
-        throw new Error('Translation service unavailable');
+    // Try Lingva Translate first (Google Translate mirror)
+    try {
+        const lingvaUrl = `https://lingva.ml/api/v1/nl/en/${encodeURIComponent(word)}`;
+        const lingvaResponse = await fetch(lingvaUrl);
+        if (lingvaResponse.ok) {
+            const lingvaData = await lingvaResponse.json();
+            if (lingvaData.translation) {
+                english = lingvaData.translation;
+            }
+        }
+    } catch {
+        // Fall through to backup
     }
 
-    const data = await response.json();
+    // Fallback to MyMemory if Lingva fails
+    if (!english) {
+        const translationUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=nl|en`;
+        const response = await fetch(translationUrl);
 
-    if (data.responseStatus !== 200) {
-        throw new Error(data.responseDetails || 'Translation failed');
+        if (!response.ok) {
+            throw new Error('Translation service unavailable');
+        }
+
+        const data = await response.json();
+
+        if (data.responseStatus !== 200) {
+            throw new Error(data.responseDetails || 'Translation failed');
+        }
+
+        english = data.responseData.translatedText;
     }
-
-    const english = data.responseData.translatedText;
 
     // Fetch real example sentence from Tatoeba (with English translation)
     let example = '';
