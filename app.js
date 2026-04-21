@@ -277,8 +277,8 @@ function initAddForm() {
             // Show preview
             previewCard.querySelector('.dutch-word').textContent = result.dutch;
             previewCard.querySelector('.english-word').textContent = result.english;
-            previewCard.querySelector('.example-sentence').textContent = result.example;
-            previewCard.querySelector('.example-translation').textContent = result.exampleTranslation;
+            previewCard.querySelector('.example-sentence').textContent = result.example || 'No example available';
+            previewCard.querySelector('.example-translation').textContent = result.exampleTranslation || '';
             previewCard.classList.remove('hidden', 'flipped');
             previewActions.classList.remove('hidden');
 
@@ -421,26 +421,11 @@ async function refreshExample(dutchWord, englishTranslation) {
 
 // Generate a meaningful example sentence when Tatoeba has none
 async function generateExampleSentence(dutchWord, englishTranslation) {
-    const eng = englishTranslation.toLowerCase();
-
-    // Matched Dutch/English template pairs - ensures the English word matches the translation
-    const templatePairs = [
-        { dutch: `Dit is erg ${dutchWord}.`, english: `This is very ${eng}.` },
-        { dutch: `Ik vind het ${dutchWord}.`, english: `I find it ${eng}.` },
-        { dutch: `Dat was heel ${dutchWord}.`, english: `That was very ${eng}.` },
-        { dutch: `Het moet ${dutchWord} zijn.`, english: `It must be ${eng}.` },
-        { dutch: `Ze noemden het ${dutchWord}.`, english: `They called it ${eng}.` },
-        { dutch: `Is dit ${dutchWord} genoeg?`, english: `Is this ${eng} enough?` },
-        { dutch: `Het lijkt ${dutchWord}.`, english: `It seems ${eng}.` },
-        { dutch: `Dat klinkt ${dutchWord}.`, english: `That sounds ${eng}.` }
-    ];
-
-    // Pick a random template pair
-    const pair = templatePairs[Math.floor(Math.random() * templatePairs.length)];
-
+    // No reliable way to generate grammatical examples without knowing part of speech
+    // Return empty - better to have no example than a bad one
     return {
-        dutch: pair.dutch,
-        english: pair.english
+        dutch: '',
+        english: ''
     };
 }
 
@@ -541,7 +526,7 @@ function showNextCard() {
     reviewButtons.classList.add('hidden');
     reviewCard.querySelector('.dutch-word').textContent = card.dutch;
     reviewCard.querySelector('.english-word').textContent = card.english;
-    reviewCard.querySelector('.example-sentence').textContent = card.example;
+    reviewCard.querySelector('.example-sentence').textContent = card.example || 'No example available';
     reviewCard.querySelector('.example-translation').textContent = card.exampleTranslation || '';
 
     document.getElementById('current-card').textContent = currentReviewIndex + 1;
