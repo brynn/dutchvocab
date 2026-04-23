@@ -205,8 +205,17 @@ function calculateNextReview(card, quality) {
     // Calculate next interval
     let interval = FSRS.nextInterval(stability);
 
-    // Minimum 1 day, round to reasonable precision
-    interval = Math.max(1, Math.round(interval * 10) / 10);
+    // For "Again" (rating 1), show same day (0.007 days = ~10 min, handled by re-queue)
+    // For "Hard" (rating 2), minimum 0.5 days (12 hours)
+    // For "Good"/"Easy", minimum 1 day
+    if (rating === 1) {
+        interval = 0.007; // ~10 minutes (but we also re-queue immediately)
+    } else if (rating === 2) {
+        interval = Math.max(0.5, interval); // At least 12 hours
+    } else {
+        interval = Math.max(1, interval); // At least 1 day
+    }
+    interval = Math.round(interval * 1000) / 1000;
 
     return {
         ...card,
@@ -375,6 +384,12 @@ function initReview() {
             const updated = calculateNextReview(card, index);
             await updateCard(updated);
 
+            // If "Again" (wrong), put card back at end of queue for immediate re-review
+            if (index === 0) {
+                reviewQueue.push(updated);
+                document.getElementById('total-cards').textContent = reviewQueue.length;
+            }
+
             currentReviewIndex++;
             showNextCard();
         });
@@ -413,7 +428,10 @@ function showNextCard() {
 
     const card = reviewQueue[currentReviewIndex];
 
-    // Update UI
+    // Hide card immediately to prevent flash
+    reviewCard.classList.add('switching');
+
+    // Update content while hidden
     reviewCard.classList.remove('flipped');
     reviewButtons.classList.add('hidden');
     reviewCard.querySelector('.dutch-word').textContent = card.dutch;
@@ -421,6 +439,13 @@ function showNextCard() {
 
     document.getElementById('current-card').textContent = currentReviewIndex + 1;
     progressFill.style.width = `${((currentReviewIndex) / reviewQueue.length) * 100}%`;
+
+    // Show card after a frame to ensure DOM has updated
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            reviewCard.classList.remove('switching');
+        });
+    });
 }
 
 // Card List

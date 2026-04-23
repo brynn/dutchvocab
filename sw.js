@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dutch-vocab-v19';
+const CACHE_NAME = 'dutch-vocab-v22';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -33,33 +33,28 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Fetch - network first for API, cache first for static assets
+// Fetch - stale-while-revalidate for static assets
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Don't cache API requests
-    if (url.hostname === 'api.anthropic.com') {
+    // Don't cache external API requests
+    if (url.origin !== self.location.origin) {
         event.respondWith(fetch(event.request));
         return;
     }
 
-    // Cache first for static assets
+    // Stale-while-revalidate: serve from cache immediately, fetch update in background
     event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) {
-                return cachedResponse;
-            }
-            return fetch(event.request).then((response) => {
-                // Don't cache non-successful responses
-                if (!response || response.status !== 200) {
-                    return response;
-                }
-                // Clone and cache the response
-                const responseToCache = response.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(event.request, responseToCache);
-                });
-                return response;
+        caches.open(CACHE_NAME).then((cache) => {
+            return cache.match(event.request).then((cachedResponse) => {
+                const fetchPromise = fetch(event.request).then((networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200) {
+                        cache.put(event.request, networkResponse.clone());
+                    }
+                    return networkResponse;
+                }).catch(() => cachedResponse);
+
+                return cachedResponse || fetchPromise;
             });
         })
     );

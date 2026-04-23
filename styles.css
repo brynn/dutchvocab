@@ -193,6 +193,10 @@ button.secondary {
     transform: rotateY(180deg);
 }
 
+.card.switching .card-inner {
+    visibility: hidden;
+}
+
 .card-front,
 .card-back {
     position: absolute;
