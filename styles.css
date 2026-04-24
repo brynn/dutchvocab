@@ -41,9 +41,28 @@ header {
     margin-bottom: 20px;
 }
 
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 header h1 {
     font-size: 1.5rem;
     color: var(--primary);
+}
+
+.version-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border: 1px solid rgba(255, 107, 53, 0.35);
+    border-radius: 999px;
+    background: rgba(255, 107, 53, 0.12);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
 }
 
 #settings-btn {
@@ -189,12 +208,16 @@ button.secondary {
     transform-style: preserve-3d;
 }
 
+.card.no-animate .card-inner {
+    transition: none;
+}
+
 .card.flipped .card-inner {
     transform: rotateY(180deg);
 }
 
 .card.switching .card-inner {
-    visibility: hidden;
+    opacity: 0;
 }
 
 .card-front,
@@ -286,6 +309,13 @@ button.secondary {
 .easy { background: #2196f3; color: white; }
 
 /* Card List */
+.backup-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
 #card-list {
     display: flex;
     flex-direction: column;

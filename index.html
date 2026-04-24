@@ -21,7 +21,10 @@
     <div id="app">
         <!-- Header -->
         <header>
-            <h1>Dutch Vocab</h1>
+            <div class="brand">
+                <h1>Dutch Vocab</h1>
+                <span id="app-version" class="version-badge" aria-label="App version"></span>
+            </div>
         </header>
 
         <!-- Navigation Tabs -->
@@ -90,6 +93,11 @@
 
         <!-- All Cards Tab -->
         <section id="list-tab" class="tab-content">
+            <div class="backup-actions">
+                <button id="export-db-btn" class="secondary">Export Backup</button>
+                <button id="import-db-btn" class="secondary">Import Backup</button>
+                <input type="file" id="import-db-input" accept="application/json" class="hidden">
+            </div>
             <div id="list-empty" class="empty-state">
                 <p>No cards yet!</p>
                 <p class="subtitle">Add some Dutch words to build your vocabulary.</p>

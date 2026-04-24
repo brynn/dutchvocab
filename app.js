@@ -1,9 +1,12 @@
 // Dutch Vocab App
 
 // Database
+// Bump this on each deploy so the visible UI version matches the service worker cache version.
+const APP_VERSION = '2026.04.24.1';
 const DB_NAME = 'DutchVocabDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'flashcards';
+const DAILY_REVIEW_HOUR = 7;
 
 let db = null;
 let pendingCard = null;
@@ -12,11 +15,13 @@ let currentReviewIndex = 0;
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', async () => {
+    initVersionBadge();
     await initDB();
     initTabs();
     initAddForm();
     initReview();
     initCardList();
+    initBackupControls();
 });
 
 // IndexedDB Setup
@@ -73,6 +78,25 @@ async function getAllCards() {
 
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
+    });
+}
+
+async function replaceAllCards(cards) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+
+        const clearRequest = store.clear();
+        clearRequest.onerror = () => reject(clearRequest.error);
+        clearRequest.onsuccess = () => {
+            cards.forEach((card) => {
+                store.put(card);
+            });
+        };
+
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error);
     });
 }
 
@@ -205,15 +229,12 @@ function calculateNextReview(card, quality) {
     // Calculate next interval
     let interval = FSRS.nextInterval(stability);
 
-    // For "Again" (rating 1), show same day (0.007 days = ~10 min, handled by re-queue)
-    // For "Hard" (rating 2), minimum 0.5 days (12 hours)
-    // For "Good"/"Easy", minimum 1 day
+    // For "Again" (rating 1), re-show in the same session and schedule next day at 7am.
+    // All persisted reviews are aligned to the daily morning review slot.
     if (rating === 1) {
-        interval = 0.007; // ~10 minutes (but we also re-queue immediately)
-    } else if (rating === 2) {
-        interval = Math.max(0.5, interval); // At least 12 hours
+        interval = 1;
     } else {
-        interval = Math.max(1, interval); // At least 1 day
+        interval = Math.max(1, interval);
     }
     interval = Math.round(interval * 1000) / 1000;
 
@@ -223,8 +244,15 @@ function calculateNextReview(card, quality) {
         difficulty,
         reps: reps + 1,
         lastReview: now,
-        nextReview: now + interval * 24 * 60 * 60 * 1000
+        nextReview: getNextMorningTimestamp(now, interval)
     };
+}
+
+function getNextMorningTimestamp(fromTimestamp, intervalDays) {
+    const nextDate = new Date(fromTimestamp);
+    nextDate.setDate(nextDate.getDate() + Math.max(1, Math.ceil(intervalDays)));
+    nextDate.setHours(DAILY_REVIEW_HOUR, 0, 0, 0);
+    return nextDate.getTime();
 }
 
 // Tab Navigation
@@ -252,6 +280,10 @@ function initTabs() {
             }
         });
     });
+}
+
+function initVersionBadge() {
+    document.getElementById('app-version').textContent = `v${APP_VERSION}`;
 }
 
 // Add Word Form
@@ -371,9 +403,14 @@ function initReview() {
     const reviewButtons = document.getElementById('review-buttons');
 
     reviewCard.addEventListener('click', () => {
+        if (reviewCard.classList.contains('switching')) {
+            return;
+        }
         reviewCard.classList.toggle('flipped');
         if (reviewCard.classList.contains('flipped')) {
             reviewButtons.classList.remove('hidden');
+        } else {
+            reviewButtons.classList.add('hidden');
         }
     });
 
@@ -428,10 +465,9 @@ function showNextCard() {
 
     const card = reviewQueue[currentReviewIndex];
 
-    // Hide card immediately to prevent flash
-    reviewCard.classList.add('switching');
-
-    // Update content while hidden
+    // Disable the flip animation while resetting to the front side so the old
+    // answer never flashes during the next card swap.
+    reviewCard.classList.add('switching', 'no-animate');
     reviewCard.classList.remove('flipped');
     reviewButtons.classList.add('hidden');
     reviewCard.querySelector('.dutch-word').textContent = card.dutch;
@@ -440,17 +476,26 @@ function showNextCard() {
     document.getElementById('current-card').textContent = currentReviewIndex + 1;
     progressFill.style.width = `${((currentReviewIndex) / reviewQueue.length) * 100}%`;
 
-    // Show card after a frame to ensure DOM has updated
+    void reviewCard.offsetHeight;
+
     requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            reviewCard.classList.remove('switching');
-        });
+        reviewCard.classList.remove('no-animate', 'switching');
     });
 }
 
 // Card List
 function initCardList() {
     loadCardList();
+}
+
+function initBackupControls() {
+    const exportBtn = document.getElementById('export-db-btn');
+    const importBtn = document.getElementById('import-db-btn');
+    const importInput = document.getElementById('import-db-input');
+
+    exportBtn.addEventListener('click', exportBackup);
+    importBtn.addEventListener('click', () => importInput.click());
+    importInput.addEventListener('change', importBackup);
 }
 
 async function loadCardList() {
@@ -478,6 +523,71 @@ async function loadCardList() {
             <button class="list-card-delete" onclick="handleDeleteCard(${card.id})">🗑️</button>
         </div>
     `).join('');
+}
+
+async function exportBackup() {
+    const cards = await getAllCards();
+    const payload = {
+        appVersion: APP_VERSION,
+        exportedAt: new Date().toISOString(),
+        cards
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = `dutch-vocab-backup-${timestamp}.json`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${cards.length} cards`, 'success');
+}
+
+async function importBackup(event) {
+    const file = event.target.files[0];
+    event.target.value = '';
+
+    if (!file) {
+        return;
+    }
+
+    try {
+        const text = await file.text();
+        const payload = JSON.parse(text);
+
+        if (!payload || !Array.isArray(payload.cards)) {
+            throw new Error('Invalid backup file');
+        }
+
+        const existingCards = await getAllCards();
+        if (existingCards.length > 0 && !confirm('Import will replace your current cards. Continue?')) {
+            return;
+        }
+
+        await replaceAllCards(payload.cards.map(normalizeImportedCard));
+        await loadCardList();
+        await loadReviewCards();
+        showToast(`Imported ${payload.cards.length} cards`, 'success');
+    } catch (error) {
+        showToast(error.message || 'Import failed', 'error');
+    }
+}
+
+function normalizeImportedCard(card) {
+    return {
+        id: card.id,
+        dutch: card.dutch || '',
+        english: card.english || '',
+        createdAt: Number(card.createdAt) || Date.now(),
+        nextReview: Number(card.nextReview) || Date.now(),
+        stability: Number(card.stability) || 0,
+        difficulty: Number(card.difficulty) || 0,
+        reps: Number(card.reps) || 0,
+        lastReview: card.lastReview ? Number(card.lastReview) : null
+    };
 }
 
 async function handleDeleteCard(id) {
