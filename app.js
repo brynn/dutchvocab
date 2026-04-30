@@ -2,9 +2,9 @@
 
 // Database
 // Bump this on each deploy so the visible UI version matches the service worker cache version.
-const APP_VERSION = '2026.04.30.10';
-const OPENAI_KEY_STORAGE = 'dutchvocab.openaiKey';
-const OPENAI_MODEL = 'gpt-4o-mini';
+const APP_VERSION = '2026.04.30.11';
+// Cloudflare Worker proxy that holds the OpenAI key. Update after deploying worker/.
+const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
 const DB_NAME = 'DutchVocabDB';
 const DB_VERSION = 2;
 const STORE_NAME = 'flashcards';
@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     initReview();
     initCardList();
     initBackupControls();
-    initSettings();
 });
 
 // IndexedDB Setup
@@ -365,73 +364,27 @@ function setLoading(loading) {
     btnLoading.classList.toggle('hidden', !loading);
 }
 
-// All translation + example sentence generation goes through OpenAI in a single call.
+// All translation + example sentence generation goes through the Cloudflare Worker proxy.
 async function translateWord(word) {
-    if (!getOpenAiKey()) {
-        throw new Error('Set your OpenAI API key in Settings (⚙️) first');
-    }
-    return openAiTranslateAndExample(word);
-}
-
-function getOpenAiKey() {
-    try { return localStorage.getItem(OPENAI_KEY_STORAGE) || ''; }
-    catch { return ''; }
-}
-
-function setOpenAiKey(key) {
-    try {
-        if (key) localStorage.setItem(OPENAI_KEY_STORAGE, key);
-        else localStorage.removeItem(OPENAI_KEY_STORAGE);
-    } catch { }
-}
-
-async function openAiTranslateAndExample(word) {
-    const apiKey = getOpenAiKey();
-    if (!apiKey) throw new Error('Missing OpenAI API key');
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(WORKER_URL, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-            model: OPENAI_MODEL,
-            response_format: { type: 'json_object' },
-            temperature: 0.6,
-            messages: [
-                {
-                    role: 'system',
-                    content: 'You help Dutch vocabulary learners. Respond with JSON only.'
-                },
-                {
-                    role: 'user',
-                    content: `For the Dutch word "${word}", return JSON with: english (a short English gloss, 1-3 words), dutch (one short natural Dutch sentence, max 12 words, that uses the word in context), english_translation (English translation of that sentence).`
-                }
-            ]
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word })
     });
 
     if (!response.ok) {
         const errText = await response.text().catch(() => '');
-        throw new Error(`OpenAI ${response.status}: ${errText.slice(0, 200)}`);
+        throw new Error(`Translation service error (${response.status}): ${errText.slice(0, 200)}`);
     }
 
     const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) throw new Error('Empty response from OpenAI');
-
-    let parsed;
-    try { parsed = JSON.parse(content); }
-    catch { throw new Error('Could not parse OpenAI response'); }
-
-    if (!parsed.english) throw new Error('OpenAI response missing translation');
+    if (!data.english) throw new Error('Translation service returned no result');
 
     return {
         dutch: word,
-        english: String(parsed.english).trim(),
-        exampleDutch: parsed.dutch ? String(parsed.dutch).trim() : '',
-        exampleEnglish: parsed.english_translation ? String(parsed.english_translation).trim() : ''
+        english: String(data.english).trim(),
+        exampleDutch: data.dutch ? String(data.dutch).trim() : '',
+        exampleEnglish: data.english_translation ? String(data.english_translation).trim() : ''
     };
 }
 
@@ -525,28 +478,6 @@ function showNextCard() {
 // Card List
 function initCardList() {
     loadCardList();
-}
-
-function initSettings() {
-    const modal = document.getElementById('settings-modal');
-    const openBtn = document.getElementById('settings-btn');
-    const saveBtn = document.getElementById('save-settings-btn');
-    const closeBtn = document.getElementById('close-settings-btn');
-    const keyInput = document.getElementById('openai-key-input');
-
-    openBtn.addEventListener('click', () => {
-        keyInput.value = getOpenAiKey();
-        modal.classList.remove('hidden');
-    });
-    closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.add('hidden');
-    });
-    saveBtn.addEventListener('click', () => {
-        setOpenAiKey(keyInput.value.trim());
-        modal.classList.add('hidden');
-        showToast('Settings saved', 'success');
-    });
 }
 
 function initBackupControls() {

@@ -19,29 +19,12 @@
 
 <body>
     <div id="app">
-        <!-- Header -->
         <header>
             <div class="brand">
                 <h1>Dutch Vocab</h1>
                 <span id="app-version" class="version-badge" aria-label="App version"></span>
             </div>
-            <button id="settings-btn" aria-label="Settings" title="Settings">⚙️</button>
         </header>
-
-        <!-- Settings Modal -->
-        <div id="settings-modal" class="modal hidden">
-            <div class="modal-content">
-                <h2>Settings</h2>
-                <label for="openai-key-input">OpenAI API Key</label>
-                <input type="password" id="openai-key-input" placeholder="sk-..." autocomplete="off" spellcheck="false">
-                <p class="help-text">Required to translate words and generate example sentences. Stored only in this
-                    browser's local storage; sent directly to OpenAI from your device.</p>
-                <div class="modal-buttons">
-                    <button id="save-settings-btn" class="primary">Save</button>
-                    <button id="close-settings-btn" class="secondary">Cancel</button>
-                </div>
-            </div>
-        </div>
 
         <!-- Navigation Tabs -->
         <nav>
