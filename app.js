@@ -2,7 +2,7 @@
 
 // Database
 // Bump this on each deploy so the visible UI version matches the service worker cache version.
-const APP_VERSION = '2026.04.30.9';
+const APP_VERSION = '2026.04.30.10';
 const OPENAI_KEY_STORAGE = 'dutchvocab.openaiKey';
 const OPENAI_MODEL = 'gpt-4o-mini';
 const DB_NAME = 'DutchVocabDB';
