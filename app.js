@@ -2,7 +2,7 @@
 
 // Database
 // Bump this on each deploy so the visible UI version matches the service worker cache version.
-const APP_VERSION = '2026.04.30.1';
+const APP_VERSION = '2026.04.30.2';
 const DB_NAME = 'DutchVocabDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'flashcards';
@@ -411,7 +411,9 @@ async function translateWord(word) {
 
 // Fetch a Dutch example sentence (with English translation) from Tatoeba.
 async function fetchExample(word) {
-    const url = `https://tatoeba.org/en/api_v0/search?from=nld&to=eng&query=${encodeURIComponent(word)}&sort=relevance&trans_filter=limit&trans_to=eng`;
+    // Tatoeba doesn't send CORS headers, so route through a public CORS proxy.
+    const tatoebaUrl = `https://tatoeba.org/en/api_v0/search?from=nld&to=eng&query=${encodeURIComponent(word)}&sort=relevance&trans_filter=limit&trans_to=eng`;
+    const url = `https://corsproxy.io/?${encodeURIComponent(tatoebaUrl)}`;
     const response = await fetch(url);
     if (!response.ok) return null;
 
