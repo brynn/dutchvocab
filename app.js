@@ -2,7 +2,9 @@
 
 // Database
 // Bump this on each deploy so the visible UI version matches the service worker cache version.
-const APP_VERSION = '2026.04.30.6';
+const APP_VERSION = '2026.04.30.8';
+const OPENAI_KEY_STORAGE = 'dutchvocab.openaiKey';
+const OPENAI_MODEL = 'gpt-4o-mini';
 const DB_NAME = 'DutchVocabDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'flashcards';
@@ -22,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initReview();
     initCardList();
     initBackupControls();
+    initSettings();
     // Backfill example sentences for older cards in the background.
     backfillExamples();
 });
@@ -362,110 +365,74 @@ function setLoading(loading) {
     btnLoading.classList.toggle('hidden', !loading);
 }
 
-// Translation API - tries multiple services for best results
+// All translation + example sentence generation goes through OpenAI in a single call.
 async function translateWord(word) {
-    let english = null;
+    if (!getOpenAiKey()) {
+        throw new Error('Set your OpenAI API key in Settings (⚙️) first');
+    }
+    return openAiTranslateAndExample(word);
+}
 
-    // Try Lingva Translate first (Google Translate mirror)
+function getOpenAiKey() {
+    try { return localStorage.getItem(OPENAI_KEY_STORAGE) || ''; }
+    catch { return ''; }
+}
+
+function setOpenAiKey(key) {
     try {
-        const lingvaUrl = `https://lingva.ml/api/v1/nl/en/${encodeURIComponent(word)}`;
-        const lingvaResponse = await fetch(lingvaUrl);
-        if (lingvaResponse.ok) {
-            const lingvaData = await lingvaResponse.json();
-            if (lingvaData.translation) {
-                english = lingvaData.translation;
-            }
-        }
-    } catch {
-        // Fall through to backup
+        if (key) localStorage.setItem(OPENAI_KEY_STORAGE, key);
+        else localStorage.removeItem(OPENAI_KEY_STORAGE);
+    } catch { }
+}
+
+async function openAiTranslateAndExample(word) {
+    const apiKey = getOpenAiKey();
+    if (!apiKey) throw new Error('Missing OpenAI API key');
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: OPENAI_MODEL,
+            response_format: { type: 'json_object' },
+            temperature: 0.6,
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You help Dutch vocabulary learners. Respond with JSON only.'
+                },
+                {
+                    role: 'user',
+                    content: `For the Dutch word "${word}", return JSON with: english (a short English gloss, 1-3 words), dutch (one short natural Dutch sentence, max 12 words, that uses the word in context), english_translation (English translation of that sentence).`
+                }
+            ]
+        })
+    });
+
+    if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        throw new Error(`OpenAI ${response.status}: ${errText.slice(0, 200)}`);
     }
 
-    // Fallback to MyMemory if Lingva fails
-    if (!english) {
-        const translationUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=nl|en`;
-        const response = await fetch(translationUrl);
+    const data = await response.json();
+    const content = data?.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Empty response from OpenAI');
 
-        if (!response.ok) {
-            throw new Error('Translation service unavailable');
-        }
+    let parsed;
+    try { parsed = JSON.parse(content); }
+    catch { throw new Error('Could not parse OpenAI response'); }
 
-        const data = await response.json();
-
-        if (data.responseStatus !== 200) {
-            throw new Error(data.responseDetails || 'Translation failed');
-        }
-
-        english = data.responseData.translatedText;
-    }
-
-    // Example sentence is best-effort; failure should not block translation.
-    const example = await fetchExample(word).catch(() => null);
+    if (!parsed.english) throw new Error('OpenAI response missing translation');
 
     return {
         dutch: word,
-        english: english,
-        exampleDutch: example?.exampleDutch || '',
-        exampleEnglish: example?.exampleEnglish || ''
+        english: String(parsed.english).trim(),
+        exampleDutch: parsed.dutch ? String(parsed.dutch).trim() : '',
+        exampleEnglish: parsed.english_translation ? String(parsed.english_translation).trim() : ''
     };
-}
-
-// Fetch a Dutch example sentence (with English translation) from Tatoeba.
-// Tries the exact word first, then a few stem-stripped variants to handle
-// inflected forms (plurals, conjugations, past participles).
-async function fetchExample(word) {
-    const queries = buildExampleQueries(word);
-    for (const query of queries) {
-        const example = await tatoebaSearch(query);
-        if (example) return example;
-    }
-    return null;
-}
-
-function buildExampleQueries(word) {
-    const lower = word.toLowerCase().trim();
-    const queries = [lower];
-
-    // Common Dutch suffixes to strip, longest first.
-    const suffixes = ['sten', 'ste', 'ten', 'den', 'en', 'er', 'st', 'de', 'te', 't', 'd', 's'];
-    for (const suffix of suffixes) {
-        if (lower.length - suffix.length >= 4 && lower.endsWith(suffix)) {
-            queries.push(lower.slice(0, -suffix.length));
-        }
-    }
-
-    // Past-participle pattern: ge<stem>(t|d|en) -> stem
-    const ppMatch = lower.match(/^(?:[a-z]+)?ge([a-z]{3,})(?:t|d|en)?$/);
-    if (ppMatch) queries.push(ppMatch[1]);
-
-    // De-duplicate while preserving order.
-    return [...new Set(queries)];
-}
-
-async function tatoebaSearch(query) {
-    const tatoebaUrl = `https://tatoeba.org/en/api_v0/search?from=nld&to=eng&query=${encodeURIComponent(query)}&sort=relevance&trans_filter=limit&trans_to=eng`;
-    const url = `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(tatoebaUrl)}`;
-    const response = await fetch(url);
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    const results = (data && data.results) || [];
-
-    for (const result of results) {
-        const dutchText = result && result.text;
-        if (!dutchText) continue;
-
-        const translationGroups = result.translations || [];
-        const flattened = translationGroups.flat ? translationGroups.flat() : [].concat(...translationGroups);
-        const englishTranslation = flattened.find(t => t && t.lang === 'eng' && t.text);
-        if (englishTranslation) {
-            return {
-                exampleDutch: dutchText,
-                exampleEnglish: englishTranslation.text
-            };
-        }
-    }
-
-    return null;
 }
 
 // One-time, per-session backfill: add example sentences to any card missing one.
@@ -474,21 +441,22 @@ async function backfillExamples() {
     if (backfillRunning) return;
     backfillRunning = true;
     try {
+        if (!getOpenAiKey()) return;
         const cards = await getAllCards();
         const missing = cards.filter(c => !c.exampleDutch || !c.exampleEnglish);
         for (const card of missing) {
             try {
-                const example = await fetchExample(card.dutch);
-                if (example) {
-                    card.exampleDutch = example.exampleDutch;
-                    card.exampleEnglish = example.exampleEnglish;
+                const result = await openAiTranslateAndExample(card.dutch);
+                if (result.exampleDutch && result.exampleEnglish) {
+                    card.exampleDutch = result.exampleDutch;
+                    card.exampleEnglish = result.exampleEnglish;
                     await updateCard(card);
                 }
-            } catch {
-                // Skip this card; will retry next launch.
+            } catch (err) {
+                console.warn('Backfill skipped for', card.dutch, err);
             }
-            // Be polite to the public API.
-            await new Promise(r => setTimeout(r, 1200));
+            // Small spacing between requests.
+            await new Promise(r => setTimeout(r, 300));
         }
     } finally {
         backfillRunning = false;
@@ -585,6 +553,30 @@ function showNextCard() {
 // Card List
 function initCardList() {
     loadCardList();
+}
+
+function initSettings() {
+    const modal = document.getElementById('settings-modal');
+    const openBtn = document.getElementById('settings-btn');
+    const saveBtn = document.getElementById('save-settings-btn');
+    const closeBtn = document.getElementById('close-settings-btn');
+    const keyInput = document.getElementById('openai-key-input');
+
+    openBtn.addEventListener('click', () => {
+        keyInput.value = getOpenAiKey();
+        modal.classList.remove('hidden');
+    });
+    closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.add('hidden');
+    });
+    saveBtn.addEventListener('click', () => {
+        setOpenAiKey(keyInput.value.trim());
+        modal.classList.add('hidden');
+        showToast('Settings saved', 'success');
+        // Re-run backfill in case key was just added.
+        backfillExamples();
+    });
 }
 
 function initBackupControls() {
