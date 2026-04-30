@@ -1,14 +1,14 @@
 // Keep this in sync with APP_VERSION in app.js and bump it on every deploy.
-const CACHE_VERSION = '2026.04.30.2';
+const CACHE_VERSION = '2026.04.30.3';
 const CACHE_NAME = `dutch-vocab-${CACHE_VERSION}`;
 const STATIC_ASSETS = [
-    '/',
-    '/index.html',
-    '/styles.css',
-    '/app.js',
-    '/sw.js',
-    '/manifest.json',
-    '/icon-512.png'
+    './',
+    './index.html',
+    './styles.css',
+    './app.js',
+    './sw.js',
+    './manifest.json',
+    './icon-512.png'
 ];
 
 // Install - cache static assets

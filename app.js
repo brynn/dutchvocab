@@ -2,7 +2,7 @@
 
 // Database
 // Bump this on each deploy so the visible UI version matches the service worker cache version.
-const APP_VERSION = '2026.04.30.2';
+const APP_VERSION = '2026.04.30.3';
 const DB_NAME = 'DutchVocabDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'flashcards';
