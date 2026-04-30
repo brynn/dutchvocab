@@ -2,7 +2,7 @@
 
 // Database
 // Bump this on each deploy so the visible UI version matches the service worker cache version.
-const APP_VERSION = '2026.04.24.1';
+const APP_VERSION = '2026.04.30.1';
 const DB_NAME = 'DutchVocabDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'flashcards';
@@ -22,6 +22,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     initReview();
     initCardList();
     initBackupControls();
+    // Backfill example sentences for older cards in the background.
+    backfillExamples();
 });
 
 // IndexedDB Setup
@@ -55,6 +57,8 @@ async function saveCard(card) {
         const cardData = {
             dutch: card.dutch,
             english: card.english,
+            exampleDutch: card.exampleDutch || '',
+            exampleEnglish: card.exampleEnglish || '',
             createdAt: Date.now(),
             nextReview: Date.now(),
             // FSRS parameters
@@ -307,12 +311,15 @@ function initAddForm() {
             const result = await translateWord(word);
             pendingCard = {
                 dutch: result.dutch,
-                english: result.english
+                english: result.english,
+                exampleDutch: result.exampleDutch,
+                exampleEnglish: result.exampleEnglish
             };
 
             // Show preview
             previewCard.querySelector('.dutch-word').textContent = result.dutch;
             previewCard.querySelector('.english-word').textContent = result.english;
+            renderExample(previewCard, result.exampleDutch, result.exampleEnglish);
             previewCard.classList.remove('hidden', 'flipped');
             previewActions.classList.remove('hidden');
 
@@ -391,10 +398,69 @@ async function translateWord(word) {
         english = data.responseData.translatedText;
     }
 
+    // Example sentence is best-effort; failure should not block translation.
+    const example = await fetchExample(word).catch(() => null);
+
     return {
         dutch: word,
-        english: english
+        english: english,
+        exampleDutch: example?.exampleDutch || '',
+        exampleEnglish: example?.exampleEnglish || ''
     };
+}
+
+// Fetch a Dutch example sentence (with English translation) from Tatoeba.
+async function fetchExample(word) {
+    const url = `https://tatoeba.org/en/api_v0/search?from=nld&to=eng&query=${encodeURIComponent(word)}&sort=relevance&trans_filter=limit&trans_to=eng`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const results = (data && data.results) || [];
+
+    for (const result of results) {
+        const dutchText = result && result.text;
+        if (!dutchText) continue;
+
+        const translationGroups = result.translations || [];
+        const flattened = translationGroups.flat ? translationGroups.flat() : [].concat(...translationGroups);
+        const englishTranslation = flattened.find(t => t && t.lang === 'eng' && t.text);
+        if (englishTranslation) {
+            return {
+                exampleDutch: dutchText,
+                exampleEnglish: englishTranslation.text
+            };
+        }
+    }
+
+    return null;
+}
+
+// One-time, per-session backfill: add example sentences to any card missing one.
+let backfillRunning = false;
+async function backfillExamples() {
+    if (backfillRunning) return;
+    backfillRunning = true;
+    try {
+        const cards = await getAllCards();
+        const missing = cards.filter(c => !c.exampleDutch || !c.exampleEnglish);
+        for (const card of missing) {
+            try {
+                const example = await fetchExample(card.dutch);
+                if (example) {
+                    card.exampleDutch = example.exampleDutch;
+                    card.exampleEnglish = example.exampleEnglish;
+                    await updateCard(card);
+                }
+            } catch {
+                // Skip this card; will retry next launch.
+            }
+            // Be polite to the public API.
+            await new Promise(r => setTimeout(r, 1200));
+        }
+    } finally {
+        backfillRunning = false;
+    }
 }
 
 // Review System
@@ -472,6 +538,7 @@ function showNextCard() {
     reviewButtons.classList.add('hidden');
     reviewCard.querySelector('.dutch-word').textContent = card.dutch;
     reviewCard.querySelector('.english-word').textContent = card.english;
+    renderExample(reviewCard, card.exampleDutch, card.exampleEnglish);
 
     document.getElementById('current-card').textContent = currentReviewIndex + 1;
     progressFill.style.width = `${((currentReviewIndex) / reviewQueue.length) * 100}%`;
@@ -514,15 +581,37 @@ async function loadCardList() {
     // Sort by creation date (newest first)
     cards.sort((a, b) => b.createdAt - a.createdAt);
 
-    listContainer.innerHTML = cards.map(card => `
+    listContainer.innerHTML = cards.map(card => {
+        const exampleDutch = card.exampleDutch ? `<div class="list-card-example-dutch">${escapeHtml(card.exampleDutch)}</div>` : '';
+        const exampleEnglish = card.exampleEnglish ? `<div class="list-card-example-english">${escapeHtml(card.exampleEnglish)}</div>` : '';
+        return `
         <div class="list-card" data-id="${card.id}">
             <div class="list-card-content">
                 <div class="list-card-dutch">${escapeHtml(card.dutch)}</div>
                 <div class="list-card-english">${escapeHtml(card.english)}</div>
+                ${exampleDutch}
+                ${exampleEnglish}
             </div>
             <button class="list-card-delete" onclick="handleDeleteCard(${card.id})">🗑️</button>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
+}
+
+function renderExample(cardEl, exampleDutch, exampleEnglish) {
+    const dutchEl = cardEl.querySelector('.example-dutch');
+    const englishEl = cardEl.querySelector('.example-english');
+    if (!dutchEl || !englishEl) return;
+    if (exampleDutch && exampleEnglish) {
+        dutchEl.textContent = exampleDutch;
+        englishEl.textContent = exampleEnglish;
+        dutchEl.classList.remove('hidden');
+        englishEl.classList.remove('hidden');
+    } else {
+        dutchEl.textContent = '';
+        englishEl.textContent = '';
+        dutchEl.classList.add('hidden');
+        englishEl.classList.add('hidden');
+    }
 }
 
 async function exportBackup() {
@@ -581,6 +670,8 @@ function normalizeImportedCard(card) {
         id: card.id,
         dutch: card.dutch || '',
         english: card.english || '',
+        exampleDutch: card.exampleDutch || '',
+        exampleEnglish: card.exampleEnglish || '',
         createdAt: Number(card.createdAt) || Date.now(),
         nextReview: Number(card.nextReview) || Date.now(),
         stability: Number(card.stability) || 0,
