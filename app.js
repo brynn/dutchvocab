@@ -2,7 +2,7 @@
 
 // Database
 // Bump this on each deploy so the visible UI version matches the service worker cache version.
-const APP_VERSION = '2026.04.30.5';
+const APP_VERSION = '2026.04.30.6';
 const DB_NAME = 'DutchVocabDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'flashcards';
@@ -410,9 +410,39 @@ async function translateWord(word) {
 }
 
 // Fetch a Dutch example sentence (with English translation) from Tatoeba.
+// Tries the exact word first, then a few stem-stripped variants to handle
+// inflected forms (plurals, conjugations, past participles).
 async function fetchExample(word) {
-    // Tatoeba doesn't send CORS headers, so route through a public CORS proxy.
-    const tatoebaUrl = `https://tatoeba.org/en/api_v0/search?from=nld&to=eng&query=${encodeURIComponent(word)}&sort=relevance&trans_filter=limit&trans_to=eng`;
+    const queries = buildExampleQueries(word);
+    for (const query of queries) {
+        const example = await tatoebaSearch(query);
+        if (example) return example;
+    }
+    return null;
+}
+
+function buildExampleQueries(word) {
+    const lower = word.toLowerCase().trim();
+    const queries = [lower];
+
+    // Common Dutch suffixes to strip, longest first.
+    const suffixes = ['sten', 'ste', 'ten', 'den', 'en', 'er', 'st', 'de', 'te', 't', 'd', 's'];
+    for (const suffix of suffixes) {
+        if (lower.length - suffix.length >= 4 && lower.endsWith(suffix)) {
+            queries.push(lower.slice(0, -suffix.length));
+        }
+    }
+
+    // Past-participle pattern: ge<stem>(t|d|en) -> stem
+    const ppMatch = lower.match(/^(?:[a-z]+)?ge([a-z]{3,})(?:t|d|en)?$/);
+    if (ppMatch) queries.push(ppMatch[1]);
+
+    // De-duplicate while preserving order.
+    return [...new Set(queries)];
+}
+
+async function tatoebaSearch(query) {
+    const tatoebaUrl = `https://tatoeba.org/en/api_v0/search?from=nld&to=eng&query=${encodeURIComponent(query)}&sort=relevance&trans_filter=limit&trans_to=eng`;
     const url = `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(tatoebaUrl)}`;
     const response = await fetch(url);
     if (!response.ok) return null;
