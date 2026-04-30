@@ -1,3 +1,10 @@
 name = "dutchvocab-proxy"
 main = "worker.js"
 compatibility_date = "2025-01-01"
+
+# D1 database binding. Run `wrangler d1 create dutchvocab-db` and paste the
+# `database_id` it prints below.
+[[d1_databases]]
+binding = "DB"
+database_name = "dutchvocab-db"
+database_id = "a931e731-ebe9-41b6-858d-7b0c35d38f58"

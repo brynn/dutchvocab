@@ -1,16 +1,10 @@
 // Dutch Vocab App
 
-// Database
-// Bump this on each deploy so the visible UI version matches the service worker cache version.
-const APP_VERSION = '2026.04.30.11';
-// Cloudflare Worker proxy that holds the OpenAI key. Update after deploying worker/.
+const APP_VERSION = '2026.04.30.12';
+// Cloudflare Worker that proxies OpenAI and stores cards in D1.
 const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
-const DB_NAME = 'DutchVocabDB';
-const DB_VERSION = 2;
-const STORE_NAME = 'flashcards';
 const DAILY_REVIEW_HOUR = 7;
 
-let db = null;
 let pendingCard = null;
 let reviewQueue = [];
 let currentReviewIndex = 0;
@@ -18,7 +12,6 @@ let currentReviewIndex = 0;
 // Initialize the app
 document.addEventListener('DOMContentLoaded', async () => {
     initVersionBadge();
-    await initDB();
     initTabs();
     initAddForm();
     initReview();
@@ -26,83 +19,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     initBackupControls();
 });
 
-// IndexedDB Setup
-async function initDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => {
-            db = request.result;
-            resolve(db);
-        };
-
-        request.onupgradeneeded = (event) => {
-            const database = event.target.result;
-            // v2: wipe and recreate the store so every card starts with the OpenAI schema.
-            if (database.objectStoreNames.contains(STORE_NAME)) {
-                database.deleteObjectStore(STORE_NAME);
-            }
-            const store = database.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-            store.createIndex('dutch', 'dutch', { unique: false });
-            store.createIndex('nextReview', 'nextReview', { unique: false });
-        };
+// Card CRUD operations - all backed by the Worker / D1.
+async function workerFetch(path, options = {}) {
+    const response = await fetch(`${WORKER_URL}${path}`, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...(options.headers || {})
+        }
     });
+    if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`${response.status} ${response.statusText}: ${text.slice(0, 200)}`);
+    }
+    if (response.status === 204) return null;
+    return response.json();
 }
 
-// Card CRUD Operations
 async function saveCard(card) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-
-        const cardData = {
-            dutch: card.dutch,
-            english: card.english,
-            exampleDutch: card.exampleDutch || '',
-            exampleEnglish: card.exampleEnglish || '',
-            createdAt: Date.now(),
-            nextReview: Date.now(),
-            // FSRS parameters
-            stability: 0,      // How long memory lasts (days)
-            difficulty: 0,     // Card difficulty (1-10)
-            reps: 0,           // Number of reviews
-            lastReview: null   // Timestamp of last review
-        };
-
-        const request = store.add(cardData);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
+    const now = Date.now();
+    const payload = {
+        dutch: card.dutch,
+        english: card.english,
+        exampleDutch: card.exampleDutch || '',
+        exampleEnglish: card.exampleEnglish || '',
+        createdAt: now,
+        nextReview: now,
+        stability: 0,
+        difficulty: 0,
+        reps: 0,
+        lastReview: null
+    };
+    const created = await workerFetch('/cards', { method: 'POST', body: JSON.stringify(payload) });
+    return created.id;
 }
 
 async function getAllCards() {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readonly');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.getAll();
-
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
+    return workerFetch('/cards');
 }
 
 async function replaceAllCards(cards) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-
-        const clearRequest = store.clear();
-        clearRequest.onerror = () => reject(clearRequest.error);
-        clearRequest.onsuccess = () => {
-            cards.forEach((card) => {
-                store.put(card);
-            });
-        };
-
-        transaction.oncomplete = () => resolve();
-        transaction.onerror = () => reject(transaction.error);
-        transaction.onabort = () => reject(transaction.error);
+    return workerFetch('/cards/bulk-replace', {
+        method: 'POST',
+        body: JSON.stringify({ cards })
     });
 }
 
@@ -113,25 +72,12 @@ async function getCardsForReview() {
 }
 
 async function updateCard(card) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.put(card);
-
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
+    if (!card.id) throw new Error('updateCard requires card.id');
+    return workerFetch(`/cards/${card.id}`, { method: 'PUT', body: JSON.stringify(card) });
 }
 
 async function deleteCard(id) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.delete(id);
-
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
-    });
+    return workerFetch(`/cards/${id}`, { method: 'DELETE' });
 }
 
 // FSRS-4.5 Algorithm (Free Spaced Repetition Scheduler)
@@ -366,20 +312,11 @@ function setLoading(loading) {
 
 // All translation + example sentence generation goes through the Cloudflare Worker proxy.
 async function translateWord(word) {
-    const response = await fetch(WORKER_URL, {
+    const data = await workerFetch('/translate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ word })
     });
-
-    if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        throw new Error(`Translation service error (${response.status}): ${errText.slice(0, 200)}`);
-    }
-
-    const data = await response.json();
     if (!data.english) throw new Error('Translation service returned no result');
-
     return {
         dutch: word,
         english: String(data.english).trim(),

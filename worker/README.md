@@ -1,46 +1,57 @@
-# Dutch Vocab OpenAI proxy
+# Dutch Vocab Worker (proxy + cloud sync)
 
-A tiny Cloudflare Worker that holds the OpenAI API key so the PWA doesn't have to.
+A Cloudflare Worker that:
+1. Holds the OpenAI API key (translation + example sentence generation).
+2. Stores all your flashcards in a D1 database so they sync across devices.
 
 ## One-time setup
 
 ```bash
-# from the repo root
 cd worker
 
 # install wrangler if you don't have it
 npm install -g wrangler
-
-# log into your Cloudflare account
 wrangler login
 
-# upload your OpenAI key as an encrypted secret (paste it when prompted)
+# upload the OpenAI key as an encrypted secret
 wrangler secret put OPENAI_API_KEY
+
+# create the D1 database (prints a database_id)
+wrangler d1 create dutchvocab-db
+# -> copy the database_id into wrangler.toml (replace REPLACE_WITH_DATABASE_ID)
+
+# create the schema
+wrangler d1 execute dutchvocab-db --remote --file=schema.sql
 
 # deploy
 wrangler deploy
 ```
 
-After `wrangler deploy` you'll see a URL like:
+After deploy, the URL prints (e.g. `https://dutchvocab-proxy.<sub>.workers.dev`).
+Paste it into `WORKER_URL` near the top of `../app.js`.
 
-```
-https://dutchvocab-proxy.<your-account>.workers.dev
-```
-
-Copy that URL into `WORKER_URL` near the top of `../app.js` and redeploy the site (push to `main`).
-
-## Updating
+## Updating worker code
 
 ```bash
 wrangler deploy
 ```
 
-Updates roll out immediately; no app changes needed unless you change the URL.
+## Updating the schema
+
+Edit `schema.sql`, then:
+
+```bash
+wrangler d1 execute dutchvocab-db --remote --file=schema.sql
+```
+
+## Inspecting cards
+
+```bash
+wrangler d1 execute dutchvocab-db --remote --command="SELECT id, dutch, english FROM cards ORDER BY createdAt DESC"
+```
 
 ## Rotating the OpenAI key
 
 ```bash
 wrangler secret put OPENAI_API_KEY
 ```
-
-Overwrites the secret. No app or code change required.
