@@ -2,11 +2,11 @@
 
 // Database
 // Bump this on each deploy so the visible UI version matches the service worker cache version.
-const APP_VERSION = '2026.04.30.8';
+const APP_VERSION = '2026.04.30.9';
 const OPENAI_KEY_STORAGE = 'dutchvocab.openaiKey';
 const OPENAI_MODEL = 'gpt-4o-mini';
 const DB_NAME = 'DutchVocabDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'flashcards';
 const DAILY_REVIEW_HOUR = 7;
 
@@ -25,8 +25,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     initCardList();
     initBackupControls();
     initSettings();
-    // Backfill example sentences for older cards in the background.
-    backfillExamples();
 });
 
 // IndexedDB Setup
@@ -42,11 +40,13 @@ async function initDB() {
 
         request.onupgradeneeded = (event) => {
             const database = event.target.result;
-            if (!database.objectStoreNames.contains(STORE_NAME)) {
-                const store = database.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-                store.createIndex('dutch', 'dutch', { unique: false });
-                store.createIndex('nextReview', 'nextReview', { unique: false });
+            // v2: wipe and recreate the store so every card starts with the OpenAI schema.
+            if (database.objectStoreNames.contains(STORE_NAME)) {
+                database.deleteObjectStore(STORE_NAME);
             }
+            const store = database.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+            store.createIndex('dutch', 'dutch', { unique: false });
+            store.createIndex('nextReview', 'nextReview', { unique: false });
         };
     });
 }
@@ -435,34 +435,6 @@ async function openAiTranslateAndExample(word) {
     };
 }
 
-// One-time, per-session backfill: add example sentences to any card missing one.
-let backfillRunning = false;
-async function backfillExamples() {
-    if (backfillRunning) return;
-    backfillRunning = true;
-    try {
-        if (!getOpenAiKey()) return;
-        const cards = await getAllCards();
-        const missing = cards.filter(c => !c.exampleDutch || !c.exampleEnglish);
-        for (const card of missing) {
-            try {
-                const result = await openAiTranslateAndExample(card.dutch);
-                if (result.exampleDutch && result.exampleEnglish) {
-                    card.exampleDutch = result.exampleDutch;
-                    card.exampleEnglish = result.exampleEnglish;
-                    await updateCard(card);
-                }
-            } catch (err) {
-                console.warn('Backfill skipped for', card.dutch, err);
-            }
-            // Small spacing between requests.
-            await new Promise(r => setTimeout(r, 300));
-        }
-    } finally {
-        backfillRunning = false;
-    }
-}
-
 // Review System
 function initReview() {
     const reviewCard = document.getElementById('review-card');
@@ -574,8 +546,6 @@ function initSettings() {
         setOpenAiKey(keyInput.value.trim());
         modal.classList.add('hidden');
         showToast('Settings saved', 'success');
-        // Re-run backfill in case key was just added.
-        backfillExamples();
     });
 }
 
