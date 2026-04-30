@@ -1,5 +1,5 @@
 // Keep this in sync with APP_VERSION in app.js and bump it on every deploy.
-const CACHE_VERSION = '2026.04.30.4';
+const CACHE_VERSION = '2026.04.30.5';
 const CACHE_NAME = `dutch-vocab-${CACHE_VERSION}`;
 const STATIC_ASSETS = [
     './',
@@ -39,9 +39,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Don't cache external API requests
+    // Don't cache external API requests; pass through and let the page handle errors.
     if (url.origin !== self.location.origin) {
-        event.respondWith(fetch(event.request));
+        event.respondWith(
+            fetch(event.request).catch(() => new Response('', { status: 599, statusText: 'Network error' }))
+        );
         return;
     }
 
