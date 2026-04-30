@@ -185,9 +185,7 @@ button.secondary {
 }
 
 @keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
 }
 
 .hidden {
@@ -197,7 +195,7 @@ button.secondary {
 /* Card Styles */
 .card {
     perspective: 1000px;
-    height: 340px;
+    height: 280px;
     margin: 24px 0;
     cursor: pointer;
 }
@@ -261,33 +259,6 @@ button.secondary {
     margin-top: 16px;
 }
 
-.example-dutch {
-    margin-top: 16px;
-    font-size: 0.95rem;
-    font-style: italic;
-    color: var(--primary);
-    line-height: 1.4;
-}
-
-.example-english {
-    margin-top: 6px;
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    line-height: 1.4;
-}
-
-.list-card-example-dutch {
-    margin-top: 8px;
-    font-size: 0.85rem;
-    font-style: italic;
-    color: var(--text);
-}
-
-.list-card-example-english {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-}
-
 /* Preview Actions */
 #preview-actions {
     display: flex;
@@ -332,25 +303,10 @@ button.secondary {
     font-size: 0.85rem;
 }
 
-.wrong {
-    background: var(--danger);
-    color: white;
-}
-
-.hard {
-    background: var(--warning);
-    color: white;
-}
-
-.good {
-    background: var(--success);
-    color: white;
-}
-
-.easy {
-    background: #2196f3;
-    color: white;
-}
+.wrong { background: var(--danger); color: white; }
+.hard { background: var(--warning); color: white; }
+.good { background: var(--success); color: white; }
+.easy { background: #2196f3; color: white; }
 
 /* Card List */
 .backup-actions {
@@ -494,7 +450,6 @@ button.secondary {
         opacity: 0;
         transform: translateX(-50%) translateY(20px);
     }
-
     to {
         opacity: 1;
         transform: translateX(-50%) translateY(0);

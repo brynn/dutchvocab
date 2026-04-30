@@ -1,5 +1,5 @@
 // Keep this in sync with APP_VERSION in app.js and bump it on every deploy.
-const CACHE_VERSION = '2026.04.30.1';
+const CACHE_VERSION = '2026.04.24.1';
 const CACHE_NAME = `dutch-vocab-${CACHE_VERSION}`;
 const STATIC_ASSETS = [
     '/',
