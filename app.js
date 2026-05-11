@@ -1,6 +1,6 @@
 // Dutch Vocab App
 
-const APP_VERSION = '2026.04.30.12';
+const APP_VERSION = '2026.05.11.1';
 // Cloudflare Worker that proxies OpenAI and stores cards in D1.
 const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
 const DAILY_REVIEW_HOUR = 7;
@@ -78,7 +78,7 @@ async function generateDrillCards(card) {
         const { present, past, perfect } = card.conjugations;
         if (present) {
             drillCards.push({
-                dutch: `tegenwoordige tijd: ${card.dutch}`,
+                dutch: `tegenwoordige tijd (present): ${card.dutch}`,
                 english: present,
                 partOfSpeech: 'verb-present',
                 exampleDutch: '',
@@ -87,7 +87,7 @@ async function generateDrillCards(card) {
         }
         if (past) {
             drillCards.push({
-                dutch: `verleden tijd: ${card.dutch}`,
+                dutch: `verleden tijd (past): ${card.dutch}`,
                 english: past,
                 partOfSpeech: 'verb-past',
                 exampleDutch: '',
@@ -96,7 +96,7 @@ async function generateDrillCards(card) {
         }
         if (perfect) {
             drillCards.push({
-                dutch: `voltooid deelwoord: ${card.dutch}`,
+                dutch: `voltooid deelwoord (perfect): ${card.dutch}`,
                 english: perfect,
                 partOfSpeech: 'verb-perfect',
                 exampleDutch: '',
