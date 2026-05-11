@@ -29,8 +29,10 @@ async function workerFetch(path, options = {}) {
         }
     });
     if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        throw new Error(`${response.status} ${response.statusText}: ${text.slice(0, 200)}`);
+        const data = await response.json().catch(() => ({}));
+        const error = new Error(data.message || `${response.status} ${response.statusText}`);
+        error.code = data.error;
+        throw error;
     }
     if (response.status === 204) return null;
     return response.json();
@@ -288,11 +290,19 @@ function initAddForm() {
 
     saveBtn.addEventListener('click', async () => {
         if (pendingCard) {
-            await saveCard(pendingCard);
-            showToast('Card saved!', 'success');
-            previewCard.classList.add('hidden');
-            previewActions.classList.add('hidden');
-            pendingCard = null;
+            try {
+                await saveCard(pendingCard);
+                showToast('Card saved!', 'success');
+                previewCard.classList.add('hidden');
+                previewActions.classList.add('hidden');
+                pendingCard = null;
+            } catch (error) {
+                if (error.code === 'duplicate') {
+                    showToast('This word is already in your deck', 'error');
+                } else {
+                    showToast(error.message || 'Failed to save card', 'error');
+                }
+            }
         }
     });
 

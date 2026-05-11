@@ -121,6 +121,15 @@ async function listCards(env, headers) {
 async function createCard(request, env, headers) {
     const body = await request.json();
     const card = sanitizeCard(body);
+
+    // Check for duplicate
+    const existing = await env.DB.prepare(
+        'SELECT id FROM cards WHERE LOWER(dutch) = LOWER(?)'
+    ).bind(card.dutch).first();
+    if (existing) {
+        return json({ error: 'duplicate', message: 'This word already exists in your deck' }, 409, headers);
+    }
+
     const result = await env.DB.prepare(
         'INSERT INTO cards (dutch, english, partOfSpeech, exampleDutch, exampleEnglish, createdAt, nextReview, stability, difficulty, reps, lastReview) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *'
     ).bind(
