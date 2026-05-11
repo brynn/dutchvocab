@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initReview();
     initCardList();
     initBackupControls();
+    initLegend();
 });
 
 // Card CRUD operations - all backed by the Worker / D1.
@@ -442,6 +443,18 @@ function initBackupControls() {
     importInput.addEventListener('change', importBackup);
 }
 
+function initLegend() {
+    const legendBtn = document.getElementById('legend-btn');
+    const legendModal = document.getElementById('legend-modal');
+    const legendCloseBtn = document.getElementById('legend-close-btn');
+
+    legendBtn.addEventListener('click', () => legendModal.classList.remove('hidden'));
+    legendCloseBtn.addEventListener('click', () => legendModal.classList.add('hidden'));
+    legendModal.addEventListener('click', (e) => {
+        if (e.target === legendModal) legendModal.classList.add('hidden');
+    });
+}
+
 async function loadCardList() {
     const cards = await getAllCards();
     const listContainer = document.getElementById('card-list');
@@ -594,7 +607,11 @@ function applyPosClass(element, partOfSpeech) {
     element.classList.forEach(cls => {
         if (cls.startsWith('pos-')) element.classList.remove(cls);
     });
-    element.classList.add(`pos-${partOfSpeech || 'other'}`);
+    const pos = partOfSpeech || 'other';
+    element.classList.add(`pos-${pos}`);
+    // Update badge text if present
+    const badge = element.querySelector('.pos-badge');
+    if (badge) badge.textContent = pos;
 }
 
 // Register service worker

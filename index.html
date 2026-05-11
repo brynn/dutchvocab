@@ -24,7 +24,26 @@
                 <h1>Dutch Vocab</h1>
                 <span id="app-version" class="version-badge" aria-label="App version"></span>
             </div>
+            <button id="legend-btn" class="icon-btn" aria-label="Show legend">?</button>
         </header>
+
+        <!-- Legend Modal -->
+        <div id="legend-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Part of Speech Colors</h2>
+                <div class="legend-grid">
+                    <div class="legend-item"><span class="legend-dot" style="background: var(--pos-noun)"></span>noun</div>
+                    <div class="legend-item"><span class="legend-dot" style="background: var(--pos-verb)"></span>verb</div>
+                    <div class="legend-item"><span class="legend-dot" style="background: var(--pos-adjective)"></span>adjective</div>
+                    <div class="legend-item"><span class="legend-dot" style="background: var(--pos-adverb)"></span>adverb</div>
+                    <div class="legend-item"><span class="legend-dot" style="background: var(--pos-preposition)"></span>preposition</div>
+                    <div class="legend-item"><span class="legend-dot" style="background: var(--pos-conjunction)"></span>conjunction</div>
+                    <div class="legend-item"><span class="legend-dot" style="background: var(--pos-pronoun)"></span>pronoun</div>
+                    <div class="legend-item"><span class="legend-dot" style="background: var(--pos-article)"></span>article</div>
+                </div>
+                <button id="legend-close-btn" class="primary">Close</button>
+            </div>
+        </div>
 
         <!-- Navigation Tabs -->
         <nav>
@@ -46,6 +65,7 @@
             <div id="preview-card" class="card hidden">
                 <div class="card-inner">
                     <div class="card-front">
+                        <span class="pos-badge"></span>
                         <p class="dutch-word"></p>
                     </div>
                     <div class="card-back">
@@ -75,6 +95,7 @@
                 <div id="review-card" class="card">
                     <div class="card-inner">
                         <div class="card-front">
+                            <span class="pos-badge"></span>
                             <p class="dutch-word"></p>
                             <p class="tap-hint">Tap to flip</p>
                         </div>
