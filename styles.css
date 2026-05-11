@@ -505,6 +505,11 @@ button.secondary {
     font-size: 0.85rem;
     color: var(--text-muted);
     margin-top: 16px;
+    transition: opacity 0.3s;
+}
+
+.tap-hint.hidden-hint {
+    opacity: 0;
 }
 
 .example-dutch {
@@ -783,6 +788,13 @@ button.secondary {
     color: var(--text-muted);
 }
 
+.empty-illustration {
+    width: 120px;
+    height: 100px;
+    margin-bottom: 16px;
+    color: var(--text-muted);
+}
+
 .empty-state p {
     font-size: 1.1rem;
 }
@@ -790,6 +802,36 @@ button.secondary {
 .empty-state .subtitle {
     font-size: 0.9rem;
     margin-top: 8px;
+}
+
+.starter-words {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.starter-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.starter-word {
+    padding: 8px 16px;
+    background: var(--bg-light);
+    border: 1px solid var(--primary);
+    border-radius: 20px;
+    color: var(--primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.starter-word:hover {
+    background: var(--primary);
+    color: white;
 }
 
 /* Modal */

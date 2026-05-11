@@ -1,6 +1,6 @@
 // Dutch Vocab App
 
-const APP_VERSION = '2026.05.11.10';
+const APP_VERSION = '2026.05.11.11';
 // Cloudflare Worker that proxies OpenAI and stores cards in D1.
 const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
 const DAILY_REVIEW_HOUR = 7;
@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initBackupControls();
     initLegend();
     initCardViewModal();
+    initStarterWords();
 });
 
 // Card CRUD operations - all backed by the Worker / D1.
@@ -529,6 +530,8 @@ function initReview() {
         reviewCard.classList.toggle('flipped');
         if (reviewCard.classList.contains('flipped')) {
             reviewButtons.classList.remove('hidden');
+            // Hide tap hint after first flip (persisted)
+            hideTapHint();
         } else {
             reviewButtons.classList.add('hidden');
         }
@@ -551,6 +554,18 @@ function initReview() {
             showNextCard();
         });
     });
+
+    // Check if user has flipped before
+    if (localStorage.getItem('hasFlippedCard')) {
+        document.querySelectorAll('.tap-hint').forEach(el => el.classList.add('hidden-hint'));
+    }
+}
+
+function hideTapHint() {
+    if (!localStorage.getItem('hasFlippedCard')) {
+        localStorage.setItem('hasFlippedCard', 'true');
+        document.querySelectorAll('.tap-hint').forEach(el => el.classList.add('hidden-hint'));
+    }
 }
 
 function filterCardsByMode(cards, mode) {
@@ -787,6 +802,24 @@ function initCardViewModal() {
 
     viewCard.addEventListener('click', () => {
         viewCard.classList.toggle('flipped');
+        if (viewCard.classList.contains('flipped')) {
+            hideTapHint();
+        }
+    });
+}
+
+function initStarterWords() {
+    document.querySelectorAll('.starter-word').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const word = btn.dataset.word;
+            // Switch to Add tab and fill in the word
+            document.querySelector('[data-tab="add"]').click();
+            const input = document.getElementById('word-input');
+            input.value = word;
+            input.focus();
+            // Trigger form submit
+            document.getElementById('add-form').dispatchEvent(new Event('submit'));
+        });
     });
 }
 
