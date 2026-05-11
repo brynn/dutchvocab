@@ -747,11 +747,44 @@ button.secondary {
 }
 
 /* Card List */
+.list-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
 .backup-actions {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-    margin-bottom: 16px;
+}
+
+.sort-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sort-control label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.sort-control select {
+    flex: 1;
+    padding: 10px 12px;
+    border: 2px solid var(--bg-light);
+    border-radius: 8px;
+    background: var(--bg-light);
+    color: var(--text);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.sort-control select:focus {
+    outline: none;
+    border-color: var(--primary);
 }
 
 #card-list {

@@ -138,10 +138,22 @@
 
         <!-- All Cards Tab -->
         <section id="list-tab" class="tab-content">
-            <div class="backup-actions">
-                <button id="export-db-btn" class="secondary">Export Backup</button>
-                <button id="import-db-btn" class="secondary">Import Backup</button>
-                <input type="file" id="import-db-input" accept="application/json" class="hidden">
+            <div class="list-controls">
+                <div class="backup-actions">
+                    <button id="export-db-btn" class="secondary">Export Backup</button>
+                    <button id="import-db-btn" class="secondary">Import Backup</button>
+                    <input type="file" id="import-db-input" accept="application/json" class="hidden">
+                </div>
+                <div class="sort-control">
+                    <label for="sort-select">Sort by:</label>
+                    <select id="sort-select">
+                        <option value="newest">Newest first</option>
+                        <option value="oldest">Oldest first</option>
+                        <option value="a-z">A → Z</option>
+                        <option value="z-a">Z → A</option>
+                        <option value="due-soon">Due soon</option>
+                    </select>
+                </div>
             </div>
             <div id="list-empty" class="empty-state">
                 <svg class="empty-illustration" viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -1,6 +1,6 @@
 // Dutch Vocab App
 
-const APP_VERSION = '2026.05.11.15';
+const APP_VERSION = '2026.05.11.16';
 // Cloudflare Worker that proxies OpenAI and stores cards in D1.
 const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
 const DAILY_REVIEW_HOUR = 7;
@@ -764,6 +764,8 @@ function showNextCard() {
 
 // Card List
 function initCardList() {
+    const sortSelect = document.getElementById('sort-select');
+    sortSelect.addEventListener('change', () => loadCardList());
     loadCardList();
 }
 
@@ -864,6 +866,7 @@ async function loadCardList() {
     const cards = await getAllCards();
     const listContainer = document.getElementById('card-list');
     const emptyState = document.getElementById('list-empty');
+    const sortSelect = document.getElementById('sort-select');
 
     if (cards.length === 0) {
         emptyState.classList.remove('hidden');
@@ -873,8 +876,9 @@ async function loadCardList() {
 
     emptyState.classList.add('hidden');
 
-    // Sort by creation date (newest first)
-    cards.sort((a, b) => b.createdAt - a.createdAt);
+    // Sort based on selected option
+    const sortOption = sortSelect.value;
+    sortCards(cards, sortOption);
 
     // Store cards for click handler
     window.cardListData = cards;
@@ -903,6 +907,28 @@ async function loadCardList() {
             showCardViewModal(window.cardListData[index]);
         });
     });
+}
+
+function sortCards(cards, sortOption) {
+    switch (sortOption) {
+        case 'newest':
+            cards.sort((a, b) => b.createdAt - a.createdAt);
+            break;
+        case 'oldest':
+            cards.sort((a, b) => a.createdAt - b.createdAt);
+            break;
+        case 'a-z':
+            cards.sort((a, b) => a.dutch.localeCompare(b.dutch, 'nl'));
+            break;
+        case 'z-a':
+            cards.sort((a, b) => b.dutch.localeCompare(a.dutch, 'nl'));
+            break;
+        case 'due-soon':
+            cards.sort((a, b) => a.nextReview - b.nextReview);
+            break;
+        default:
+            cards.sort((a, b) => b.createdAt - a.createdAt);
+    }
 }
 
 function renderExample(cardEl, exampleDutch, exampleEnglish) {
