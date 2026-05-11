@@ -520,6 +520,24 @@ button.secondary {
     line-height: 1.4;
 }
 
+/* Example sentence colors by part of speech */
+.pos-noun .example-dutch { color: var(--pos-noun); }
+.pos-verb .example-dutch { color: var(--pos-verb); }
+.pos-adjective .example-dutch { color: var(--pos-adjective); }
+.pos-adverb .example-dutch { color: var(--pos-adverb); }
+.pos-preposition .example-dutch { color: var(--pos-preposition); }
+.pos-conjunction .example-dutch { color: var(--pos-conjunction); }
+.pos-pronoun .example-dutch { color: var(--pos-pronoun); }
+.pos-interjection .example-dutch { color: var(--pos-interjection); }
+.pos-article .example-dutch { color: var(--pos-article); }
+.pos-article-drill .example-dutch { color: var(--pos-article-drill); }
+.pos-verb-present .example-dutch,
+.pos-verb-present-irregular .example-dutch { color: var(--pos-verb-present); }
+.pos-verb-past .example-dutch,
+.pos-verb-past-irregular .example-dutch { color: var(--pos-verb-past); }
+.pos-verb-perfect .example-dutch,
+.pos-verb-perfect-irregular .example-dutch { color: var(--pos-verb-perfect); }
+
 .example-english {
     margin-top: 6px;
     font-size: 0.9rem;
