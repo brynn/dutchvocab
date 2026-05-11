@@ -31,9 +31,9 @@
 
     /* Drill card colors (related to their base type) */
     --pos-article-drill: #42a5f5;  /* Same as noun */
-    --pos-verb-present: #66bb6a;   /* Same as verb */
-    --pos-verb-past: #4caf50;      /* Slightly different green */
-    --pos-verb-perfect: #81c784;   /* Lighter green */
+    --pos-verb-present: #66bb6a;   /* Green - happening now */
+    --pos-verb-past: #ffb74d;      /* Amber - looking back */
+    --pos-verb-perfect: #4dd0e1;   /* Cyan - completed */
 }
 
 body {
