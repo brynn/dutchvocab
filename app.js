@@ -395,8 +395,15 @@ async function translateWord(word) {
         body: JSON.stringify({ word })
     });
     if (!data.english) throw new Error('Translation service returned no result');
+
+    // For nouns, use the singular form if provided
+    let dutchWord = word;
+    if (data.partOfSpeech === 'noun' && data.singular) {
+        dutchWord = data.singular;
+    }
+
     const result = {
-        dutch: word,
+        dutch: dutchWord,
         english: String(data.english).trim(),
         partOfSpeech: data.partOfSpeech || 'other',
         exampleDutch: data.dutch ? String(data.dutch).trim() : '',

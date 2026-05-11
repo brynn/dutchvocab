@@ -92,7 +92,7 @@ async function handleTranslate(request, env, headers) {
 - partOfSpeech: one of noun, verb, adjective, adverb, preposition, conjunction, pronoun, interjection, article, other
 - dutch: one short natural Dutch sentence (max 12 words) using the word
 - english_translation: English translation of that sentence
-- If partOfSpeech is "noun": include "article" (either "de" or "het")
+- If partOfSpeech is "noun": include "article" (either "de" or "het") and "singular" (the singular form of the noun - IMPORTANT: if the input is a plural noun, return the singular form here)
 - If partOfSpeech is "verb": include "conjugations" object with:
   - present: "ik/jij/hij form, wij form" (e.g. "loop, loopt, lopen")
   - past: "singular, plural" (e.g. "liep, liepen")
@@ -121,9 +121,14 @@ async function handleTranslate(request, env, headers) {
         english_translation: (parsed.english_translation || '').toString().trim()
     };
 
-    // Include article for nouns
-    if (result.partOfSpeech === 'noun' && parsed.article) {
-        result.article = parsed.article.toString().trim().toLowerCase();
+    // Include article and singular form for nouns
+    if (result.partOfSpeech === 'noun') {
+        if (parsed.article) {
+            result.article = parsed.article.toString().trim().toLowerCase();
+        }
+        if (parsed.singular) {
+            result.singular = parsed.singular.toString().trim().toLowerCase();
+        }
     }
 
     // Include conjugations for verbs
