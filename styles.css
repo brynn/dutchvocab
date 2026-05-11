@@ -707,11 +707,24 @@ button.secondary {
 }
 
 /* Legend */
+.legend-section {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.legend-section:not(:first-of-type) {
+    margin-top: 16px;
+}
+
 .legend-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .legend-item {
