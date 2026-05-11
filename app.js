@@ -1,6 +1,6 @@
 // Dutch Vocab App
 
-const APP_VERSION = '2026.05.11.14';
+const APP_VERSION = '2026.05.11.15';
 // Cloudflare Worker that proxies OpenAI and stores cards in D1.
 const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
 const DAILY_REVIEW_HOUR = 7;
@@ -627,19 +627,22 @@ function formatVerbTenseFront(card) {
     const match = card.dutch.match(/:\s*(.+)$/);
     const verbName = match ? match[1] : card.dutch;
 
-    let tenseLabel, tenseEnglish;
+    let tenseLabel, tenseEnglish, tenseClass;
     if (pos.startsWith('verb-present')) {
         tenseLabel = 'Tegenwoordige tijd';
         tenseEnglish = 'Present tense';
+        tenseClass = 'present';
     } else if (pos.startsWith('verb-past')) {
         tenseLabel = 'Verleden tijd';
         tenseEnglish = 'Past tense';
+        tenseClass = 'past';
     } else {
         tenseLabel = 'Voltooid deelwoord';
         tenseEnglish = 'Perfect tense';
+        tenseClass = 'perfect';
     }
 
-    return { verbName, tenseLabel, tenseEnglish };
+    return { verbName, tenseLabel, tenseEnglish, tenseClass };
 }
 
 // Format conjugations for table display
@@ -727,8 +730,8 @@ function showNextCard() {
     const englishWordEl = reviewCard.querySelector('.english-word');
 
     if (verbTenseInfo) {
-        // Verb tense card: show formatted front
-        dutchWordEl.innerHTML = `<span class="verb-tense-label">${verbTenseInfo.tenseLabel}</span>
+        // Verb tense card: show formatted front with tense indicator dot
+        dutchWordEl.innerHTML = `<span class="verb-tense-label">${verbTenseInfo.tenseLabel}<span class="tense-indicator ${verbTenseInfo.tenseClass}"></span></span>
             <span class="verb-tense-english">${verbTenseInfo.tenseEnglish}</span>
             <span class="verb-name">${escapeHtml(verbTenseInfo.verbName)}</span>`;
 
@@ -840,7 +843,7 @@ function showCardViewModal(card) {
     const deHetInfo = formatDeHetCard(card);
 
     if (verbTenseInfo) {
-        dutchWordEl.innerHTML = `<span class="verb-tense-label">${verbTenseInfo.tenseLabel}</span>
+        dutchWordEl.innerHTML = `<span class="verb-tense-label">${verbTenseInfo.tenseLabel}<span class="tense-indicator ${verbTenseInfo.tenseClass}"></span></span>
             <span class="verb-tense-english">${verbTenseInfo.tenseEnglish}</span>
             <span class="verb-name">${escapeHtml(verbTenseInfo.verbName)}</span>`;
         englishWordEl.innerHTML = formatConjugationsTable(card);

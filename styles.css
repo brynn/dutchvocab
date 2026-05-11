@@ -31,9 +31,14 @@
 
     /* Drill card colors (related to their base type) */
     --pos-article-drill: #42a5f5;  /* Same as noun */
-    --pos-verb-present: #66bb6a;   /* Green - happening now */
-    --pos-verb-past: #ffb74d;      /* Amber - looking back */
-    --pos-verb-perfect: #4dd0e1;   /* Cyan - completed */
+    --pos-verb-present: #66bb6a;   /* Same as base verb */
+    --pos-verb-past: #66bb6a;      /* Same as base verb */
+    --pos-verb-perfect: #66bb6a;   /* Same as base verb */
+
+    /* Tense accent colors (for secondary indicator) */
+    --tense-present: #66bb6a;
+    --tense-past: #ffb74d;
+    --tense-perfect: #4dd0e1;
 }
 
 body {
@@ -432,6 +437,20 @@ button.secondary {
     font-weight: 400;
     margin-bottom: 16px;
 }
+
+/* Tense indicator dot */
+.tense-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.tense-indicator.present { background: var(--tense-present); }
+.tense-indicator.past { background: var(--tense-past); }
+.tense-indicator.perfect { background: var(--tense-perfect); }
 
 .verb-name {
     display: block;
