@@ -41,6 +41,7 @@ async function saveCard(card) {
     const payload = {
         dutch: card.dutch,
         english: card.english,
+        partOfSpeech: card.partOfSpeech || 'other',
         exampleDutch: card.exampleDutch || '',
         exampleEnglish: card.exampleEnglish || '',
         createdAt: now,
@@ -260,11 +261,13 @@ function initAddForm() {
             pendingCard = {
                 dutch: result.dutch,
                 english: result.english,
+                partOfSpeech: result.partOfSpeech,
                 exampleDutch: result.exampleDutch,
                 exampleEnglish: result.exampleEnglish
             };
 
             // Show preview
+            applyPosClass(previewCard, result.partOfSpeech);
             previewCard.querySelector('.dutch-word').textContent = result.dutch;
             previewCard.querySelector('.english-word').textContent = result.english;
             renderExample(previewCard, result.exampleDutch, result.exampleEnglish);
@@ -320,6 +323,7 @@ async function translateWord(word) {
     return {
         dutch: word,
         english: String(data.english).trim(),
+        partOfSpeech: data.partOfSpeech || 'other',
         exampleDutch: data.dutch ? String(data.dutch).trim() : '',
         exampleEnglish: data.english_translation ? String(data.english_translation).trim() : ''
     };
@@ -398,6 +402,7 @@ function showNextCard() {
     reviewCard.classList.add('switching', 'no-animate');
     reviewCard.classList.remove('flipped');
     reviewButtons.classList.add('hidden');
+    applyPosClass(reviewCard, card.partOfSpeech);
     reviewCard.querySelector('.dutch-word').textContent = card.dutch;
     reviewCard.querySelector('.english-word').textContent = card.english;
     renderExample(reviewCard, card.exampleDutch, card.exampleEnglish);
@@ -444,10 +449,11 @@ async function loadCardList() {
     cards.sort((a, b) => b.createdAt - a.createdAt);
 
     listContainer.innerHTML = cards.map(card => {
+        const posClass = `pos-${card.partOfSpeech || 'other'}`;
         const exampleDutch = card.exampleDutch ? `<div class="list-card-example-dutch">${escapeHtml(card.exampleDutch)}</div>` : '';
         const exampleEnglish = card.exampleEnglish ? `<div class="list-card-example-english">${escapeHtml(card.exampleEnglish)}</div>` : '';
         return `
-        <div class="list-card" data-id="${card.id}">
+        <div class="list-card ${posClass}" data-id="${card.id}">
             <div class="list-card-content">
                 <div class="list-card-dutch">${escapeHtml(card.dutch)}</div>
                 <div class="list-card-english">${escapeHtml(card.english)}</div>
@@ -532,6 +538,7 @@ function normalizeImportedCard(card) {
         id: card.id,
         dutch: card.dutch || '',
         english: card.english || '',
+        partOfSpeech: card.partOfSpeech || 'other',
         exampleDutch: card.exampleDutch || '',
         exampleEnglish: card.exampleEnglish || '',
         createdAt: Number(card.createdAt) || Date.now(),
@@ -570,6 +577,14 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function applyPosClass(element, partOfSpeech) {
+    // Remove any existing pos-* class
+    element.classList.forEach(cls => {
+        if (cls.startsWith('pos-')) element.classList.remove(cls);
+    });
+    element.classList.add(`pos-${partOfSpeech || 'other'}`);
 }
 
 // Register service worker

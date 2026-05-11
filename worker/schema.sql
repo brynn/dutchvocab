@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS cards (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     dutch TEXT NOT NULL,
     english TEXT NOT NULL,
+    partOfSpeech TEXT NOT NULL DEFAULT 'other',
     exampleDutch TEXT NOT NULL DEFAULT '',
     exampleEnglish TEXT NOT NULL DEFAULT '',
     createdAt INTEGER NOT NULL,

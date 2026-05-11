@@ -87,7 +87,7 @@ async function handleTranslate(request, env, headers) {
             temperature: 0.6,
             messages: [
                 { role: 'system', content: 'You help Dutch vocabulary learners. Respond with JSON only.' },
-                { role: 'user', content: `For the Dutch word "${word}", return JSON with: english (a short English gloss, 1-3 words), dutch (one short natural Dutch sentence, max 12 words, that uses the word in context), english_translation (English translation of that sentence).` }
+                { role: 'user', content: `For the Dutch word "${word}", return JSON with: english (a short English gloss, 1-3 words), partOfSpeech (one of: noun, verb, adjective, adverb, preposition, conjunction, pronoun, interjection, article, other), dutch (one short natural Dutch sentence, max 12 words, that uses the word in context), english_translation (English translation of that sentence).` }
             ]
         })
     });
@@ -107,6 +107,7 @@ async function handleTranslate(request, env, headers) {
 
     return json({
         english: (parsed.english || '').toString().trim(),
+        partOfSpeech: (parsed.partOfSpeech || 'other').toString().trim().toLowerCase(),
         dutch: (parsed.dutch || '').toString().trim(),
         english_translation: (parsed.english_translation || '').toString().trim()
     }, 200, headers);
@@ -121,9 +122,9 @@ async function createCard(request, env, headers) {
     const body = await request.json();
     const card = sanitizeCard(body);
     const result = await env.DB.prepare(
-        'INSERT INTO cards (dutch, english, exampleDutch, exampleEnglish, createdAt, nextReview, stability, difficulty, reps, lastReview) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *'
+        'INSERT INTO cards (dutch, english, partOfSpeech, exampleDutch, exampleEnglish, createdAt, nextReview, stability, difficulty, reps, lastReview) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *'
     ).bind(
-        card.dutch, card.english, card.exampleDutch, card.exampleEnglish,
+        card.dutch, card.english, card.partOfSpeech, card.exampleDutch, card.exampleEnglish,
         card.createdAt, card.nextReview, card.stability, card.difficulty, card.reps, card.lastReview
     ).first();
     return json(result, 200, headers);
@@ -133,9 +134,9 @@ async function updateCard(id, request, env, headers) {
     const body = await request.json();
     const card = sanitizeCard(body);
     const result = await env.DB.prepare(
-        'UPDATE cards SET dutch=?, english=?, exampleDutch=?, exampleEnglish=?, createdAt=?, nextReview=?, stability=?, difficulty=?, reps=?, lastReview=? WHERE id=? RETURNING *'
+        'UPDATE cards SET dutch=?, english=?, partOfSpeech=?, exampleDutch=?, exampleEnglish=?, createdAt=?, nextReview=?, stability=?, difficulty=?, reps=?, lastReview=? WHERE id=? RETURNING *'
     ).bind(
-        card.dutch, card.english, card.exampleDutch, card.exampleEnglish,
+        card.dutch, card.english, card.partOfSpeech, card.exampleDutch, card.exampleEnglish,
         card.createdAt, card.nextReview, card.stability, card.difficulty, card.reps, card.lastReview,
         id
     ).first();
@@ -155,11 +156,11 @@ async function bulkReplaceCards(request, env, headers) {
     }
     const stmts = [env.DB.prepare('DELETE FROM cards')];
     const insert = env.DB.prepare(
-        'INSERT INTO cards (dutch, english, exampleDutch, exampleEnglish, createdAt, nextReview, stability, difficulty, reps, lastReview) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO cards (dutch, english, partOfSpeech, exampleDutch, exampleEnglish, createdAt, nextReview, stability, difficulty, reps, lastReview) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     for (const raw of body.cards) {
         const c = sanitizeCard(raw);
-        stmts.push(insert.bind(c.dutch, c.english, c.exampleDutch, c.exampleEnglish, c.createdAt, c.nextReview, c.stability, c.difficulty, c.reps, c.lastReview));
+        stmts.push(insert.bind(c.dutch, c.english, c.partOfSpeech, c.exampleDutch, c.exampleEnglish, c.createdAt, c.nextReview, c.stability, c.difficulty, c.reps, c.lastReview));
     }
     await env.DB.batch(stmts);
     return json({ ok: true, count: body.cards.length }, 200, headers);
@@ -167,9 +168,12 @@ async function bulkReplaceCards(request, env, headers) {
 
 function sanitizeCard(raw) {
     const now = Date.now();
+    const validPOS = ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'conjunction', 'pronoun', 'interjection', 'article', 'other'];
+    const pos = String(raw.partOfSpeech || '').trim().toLowerCase();
     return {
         dutch: String(raw.dutch || '').trim(),
         english: String(raw.english || '').trim(),
+        partOfSpeech: validPOS.includes(pos) ? pos : 'other',
         exampleDutch: String(raw.exampleDutch || '').trim(),
         exampleEnglish: String(raw.exampleEnglish || '').trim(),
         createdAt: Number.isFinite(raw.createdAt) ? raw.createdAt : now,

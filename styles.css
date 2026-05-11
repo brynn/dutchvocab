@@ -16,6 +16,18 @@
     --text: #eaeaea;
     --text-muted: #a0a0a0;
     --border-radius: 12px;
+
+    /* Part of speech colors */
+    --pos-noun: #42a5f5;
+    --pos-verb: #66bb6a;
+    --pos-adjective: #ffa726;
+    --pos-adverb: #ab47bc;
+    --pos-preposition: #26a69a;
+    --pos-conjunction: #ec407a;
+    --pos-pronoun: #78909c;
+    --pos-interjection: #ef5350;
+    --pos-article: #8d6e63;
+    --pos-other: #ff6b35;
 }
 
 body {
@@ -250,6 +262,18 @@ button.secondary {
     margin-bottom: 8px;
 }
 
+/* Part of speech color classes */
+.pos-noun .dutch-word { color: var(--pos-noun); }
+.pos-verb .dutch-word { color: var(--pos-verb); }
+.pos-adjective .dutch-word { color: var(--pos-adjective); }
+.pos-adverb .dutch-word { color: var(--pos-adverb); }
+.pos-preposition .dutch-word { color: var(--pos-preposition); }
+.pos-conjunction .dutch-word { color: var(--pos-conjunction); }
+.pos-pronoun .dutch-word { color: var(--pos-pronoun); }
+.pos-interjection .dutch-word { color: var(--pos-interjection); }
+.pos-article .dutch-word { color: var(--pos-article); }
+.pos-other .dutch-word { color: var(--pos-other); }
+
 .english-word {
     font-size: 1.5rem;
     font-weight: 600;
@@ -384,6 +408,18 @@ button.secondary {
     font-weight: 600;
     color: var(--primary);
 }
+
+/* Part of speech colors for list cards */
+.list-card.pos-noun .list-card-dutch { color: var(--pos-noun); }
+.list-card.pos-verb .list-card-dutch { color: var(--pos-verb); }
+.list-card.pos-adjective .list-card-dutch { color: var(--pos-adjective); }
+.list-card.pos-adverb .list-card-dutch { color: var(--pos-adverb); }
+.list-card.pos-preposition .list-card-dutch { color: var(--pos-preposition); }
+.list-card.pos-conjunction .list-card-dutch { color: var(--pos-conjunction); }
+.list-card.pos-pronoun .list-card-dutch { color: var(--pos-pronoun); }
+.list-card.pos-interjection .list-card-dutch { color: var(--pos-interjection); }
+.list-card.pos-article .list-card-dutch { color: var(--pos-article); }
+.list-card.pos-other .list-card-dutch { color: var(--pos-other); }
 
 .list-card-english {
     font-size: 0.9rem;
