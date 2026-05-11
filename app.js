@@ -1,6 +1,6 @@
 // Dutch Vocab App
 
-const APP_VERSION = '2026.05.11.1';
+const APP_VERSION = '2026.05.11.2';
 // Cloudflare Worker that proxies OpenAI and stores cards in D1.
 const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
 const DAILY_REVIEW_HOUR = 7;
@@ -75,32 +75,34 @@ async function generateDrillCards(card) {
 
     // For verbs: create tense drill cards
     if (card.partOfSpeech === 'verb' && card.conjugations) {
-        const { present, past, perfect } = card.conjugations;
+        const { present, presentExample, presentExampleEnglish, past, pastExample, pastExampleEnglish, perfect, perfectExample, perfectExampleEnglish } = card.conjugations;
+        const irregularLabel = card.isIrregular ? ' [irregular]' : ' [regular]';
+
         if (present) {
             drillCards.push({
-                dutch: `tegenwoordige tijd (present): ${card.dutch}`,
+                dutch: `tegenwoordige tijd (present)${irregularLabel}: ${card.dutch}`,
                 english: present,
                 partOfSpeech: 'verb-present',
-                exampleDutch: '',
-                exampleEnglish: ''
+                exampleDutch: presentExample || '',
+                exampleEnglish: presentExampleEnglish || ''
             });
         }
         if (past) {
             drillCards.push({
-                dutch: `verleden tijd (past): ${card.dutch}`,
+                dutch: `verleden tijd (past)${irregularLabel}: ${card.dutch}`,
                 english: past,
                 partOfSpeech: 'verb-past',
-                exampleDutch: '',
-                exampleEnglish: ''
+                exampleDutch: pastExample || '',
+                exampleEnglish: pastExampleEnglish || ''
             });
         }
         if (perfect) {
             drillCards.push({
-                dutch: `voltooid deelwoord (perfect): ${card.dutch}`,
+                dutch: `voltooid deelwoord (perfect)${irregularLabel}: ${card.dutch}`,
                 english: perfect,
                 partOfSpeech: 'verb-perfect',
-                exampleDutch: '',
-                exampleEnglish: ''
+                exampleDutch: perfectExample || '',
+                exampleEnglish: perfectExampleEnglish || ''
             });
         }
     }
@@ -413,9 +415,10 @@ async function translateWord(word) {
     if (data.article) {
         result.article = data.article;
     }
-    // Include conjugations for verbs
+    // Include conjugations and isIrregular for verbs
     if (data.conjugations) {
         result.conjugations = data.conjugations;
+        result.isIrregular = data.isIrregular;
     }
     return result;
 }

@@ -93,10 +93,18 @@ async function handleTranslate(request, env, headers) {
 - dutch: one short natural Dutch sentence (max 12 words) using the word
 - english_translation: English translation of that sentence
 - If partOfSpeech is "noun": include "article" (either "de" or "het") and "singular" (the singular form of the noun - IMPORTANT: if the input is a plural noun, return the singular form here)
-- If partOfSpeech is "verb": include "conjugations" object with:
-  - present: "ik/jij/hij form, wij form" (e.g. "loop, loopt, lopen")
-  - past: "singular, plural" (e.g. "liep, liepen")
-  - perfect: "past participle with hebben or zijn" (e.g. "heb gelopen" or "ben gegaan")` }
+- If partOfSpeech is "verb": include:
+  - "isIrregular": true if the verb is irregular (strong verb), false if regular (weak verb)
+  - "conjugations" object with:
+    - present: "ik/jij/hij form, wij form" (e.g. "loop, loopt, lopen")
+    - presentExample: a short Dutch sentence using the verb in present tense
+    - presentExampleEnglish: English translation of presentExample
+    - past: "singular, plural" (e.g. "liep, liepen")
+    - pastExample: a short Dutch sentence using the verb in past tense
+    - pastExampleEnglish: English translation of pastExample
+    - perfect: "past participle with hebben or zijn" (e.g. "heb gelopen" or "ben gegaan")
+    - perfectExample: a short Dutch sentence using the verb in perfect tense
+    - perfectExampleEnglish: English translation of perfectExample` }
             ]
         })
     });
@@ -132,12 +140,21 @@ async function handleTranslate(request, env, headers) {
     }
 
     // Include conjugations for verbs
-    if (result.partOfSpeech === 'verb' && parsed.conjugations) {
-        result.conjugations = {
-            present: (parsed.conjugations.present || '').toString().trim(),
-            past: (parsed.conjugations.past || '').toString().trim(),
-            perfect: (parsed.conjugations.perfect || '').toString().trim()
-        };
+    if (result.partOfSpeech === 'verb') {
+        result.isIrregular = !!parsed.isIrregular;
+        if (parsed.conjugations) {
+            result.conjugations = {
+                present: (parsed.conjugations.present || '').toString().trim(),
+                presentExample: (parsed.conjugations.presentExample || '').toString().trim(),
+                presentExampleEnglish: (parsed.conjugations.presentExampleEnglish || '').toString().trim(),
+                past: (parsed.conjugations.past || '').toString().trim(),
+                pastExample: (parsed.conjugations.pastExample || '').toString().trim(),
+                pastExampleEnglish: (parsed.conjugations.pastExampleEnglish || '').toString().trim(),
+                perfect: (parsed.conjugations.perfect || '').toString().trim(),
+                perfectExample: (parsed.conjugations.perfectExample || '').toString().trim(),
+                perfectExampleEnglish: (parsed.conjugations.perfectExampleEnglish || '').toString().trim()
+            };
+        }
     }
 
     return json(result, 200, headers);
