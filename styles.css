@@ -28,6 +28,12 @@
     --pos-interjection: #ef5350;
     --pos-article: #8d6e63;
     --pos-other: #ff6b35;
+
+    /* Drill card colors (related to their base type) */
+    --pos-article-drill: #42a5f5;  /* Same as noun */
+    --pos-verb-present: #66bb6a;   /* Same as verb */
+    --pos-verb-past: #4caf50;      /* Slightly different green */
+    --pos-verb-perfect: #81c784;   /* Lighter green */
 }
 
 body {
@@ -292,6 +298,12 @@ button.secondary {
 .pos-article .dutch-word { color: var(--pos-article); }
 .pos-other .dutch-word { color: var(--pos-other); }
 
+/* Drill card color classes */
+.pos-article-drill .dutch-word { color: var(--pos-article-drill); }
+.pos-verb-present .dutch-word { color: var(--pos-verb-present); }
+.pos-verb-past .dutch-word { color: var(--pos-verb-past); }
+.pos-verb-perfect .dutch-word { color: var(--pos-verb-perfect); }
+
 /* Part of speech badge */
 .pos-badge {
     display: inline-block;
@@ -315,6 +327,12 @@ button.secondary {
 .pos-interjection .pos-badge { background: var(--pos-interjection); color: white; }
 .pos-article .pos-badge { background: var(--pos-article); color: white; }
 .pos-other .pos-badge { background: var(--pos-other); color: white; }
+
+/* Drill card badges */
+.pos-article-drill .pos-badge { background: var(--pos-article-drill); color: white; }
+.pos-verb-present .pos-badge { background: var(--pos-verb-present); color: white; }
+.pos-verb-past .pos-badge { background: var(--pos-verb-past); color: white; }
+.pos-verb-perfect .pos-badge { background: var(--pos-verb-perfect); color: white; }
 
 .english-word {
     font-size: 1.5rem;
@@ -462,6 +480,12 @@ button.secondary {
 .list-card.pos-interjection .list-card-dutch { color: var(--pos-interjection); }
 .list-card.pos-article .list-card-dutch { color: var(--pos-article); }
 .list-card.pos-other .list-card-dutch { color: var(--pos-other); }
+
+/* Drill card colors for list cards */
+.list-card.pos-article-drill .list-card-dutch { color: var(--pos-article-drill); }
+.list-card.pos-verb-present .list-card-dutch { color: var(--pos-verb-present); }
+.list-card.pos-verb-past .list-card-dutch { color: var(--pos-verb-past); }
+.list-card.pos-verb-perfect .list-card-dutch { color: var(--pos-verb-perfect); }
 
 .list-card-english {
     font-size: 0.9rem;

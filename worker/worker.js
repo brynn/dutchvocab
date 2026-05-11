@@ -87,7 +87,16 @@ async function handleTranslate(request, env, headers) {
             temperature: 0.6,
             messages: [
                 { role: 'system', content: 'You help Dutch vocabulary learners. Respond with JSON only.' },
-                { role: 'user', content: `For the Dutch word "${word}", return JSON with: english (a short English gloss, 1-3 words), partOfSpeech (one of: noun, verb, adjective, adverb, preposition, conjunction, pronoun, interjection, article, other), dutch (one short natural Dutch sentence, max 12 words, that uses the word in context), english_translation (English translation of that sentence).` }
+                { role: 'user', content: `For the Dutch word "${word}", return JSON with:
+- english: a short English gloss (1-3 words)
+- partOfSpeech: one of noun, verb, adjective, adverb, preposition, conjunction, pronoun, interjection, article, other
+- dutch: one short natural Dutch sentence (max 12 words) using the word
+- english_translation: English translation of that sentence
+- If partOfSpeech is "noun": include "article" (either "de" or "het")
+- If partOfSpeech is "verb": include "conjugations" object with:
+  - present: "ik/jij/hij form, wij form" (e.g. "loop, loopt, lopen")
+  - past: "singular, plural" (e.g. "liep, liepen")
+  - perfect: "past participle with hebben or zijn" (e.g. "heb gelopen" or "ben gegaan")` }
             ]
         })
     });
@@ -105,12 +114,28 @@ async function handleTranslate(request, env, headers) {
     try { parsed = JSON.parse(content); }
     catch { return json({ error: 'Could not parse OpenAI response' }, 502, headers); }
 
-    return json({
+    const result = {
         english: (parsed.english || '').toString().trim(),
         partOfSpeech: (parsed.partOfSpeech || 'other').toString().trim().toLowerCase(),
         dutch: (parsed.dutch || '').toString().trim(),
         english_translation: (parsed.english_translation || '').toString().trim()
-    }, 200, headers);
+    };
+
+    // Include article for nouns
+    if (result.partOfSpeech === 'noun' && parsed.article) {
+        result.article = parsed.article.toString().trim().toLowerCase();
+    }
+
+    // Include conjugations for verbs
+    if (result.partOfSpeech === 'verb' && parsed.conjugations) {
+        result.conjugations = {
+            present: (parsed.conjugations.present || '').toString().trim(),
+            past: (parsed.conjugations.past || '').toString().trim(),
+            perfect: (parsed.conjugations.perfect || '').toString().trim()
+        };
+    }
+
+    return json(result, 200, headers);
 }
 
 async function listCards(env, headers) {
@@ -177,7 +202,7 @@ async function bulkReplaceCards(request, env, headers) {
 
 function sanitizeCard(raw) {
     const now = Date.now();
-    const validPOS = ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'conjunction', 'pronoun', 'interjection', 'article', 'other'];
+    const validPOS = ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'conjunction', 'pronoun', 'interjection', 'article', 'other', 'article-drill', 'verb-present', 'verb-past', 'verb-perfect'];
     const pos = String(raw.partOfSpeech || '').trim().toLowerCase();
     return {
         dutch: String(raw.dutch || '').trim(),

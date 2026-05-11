@@ -58,6 +58,66 @@ async function saveCard(card) {
     return created.id;
 }
 
+// Generate additional drill cards for nouns (de/het) and verbs (tenses)
+async function generateDrillCards(card) {
+    const drillCards = [];
+
+    // For nouns: create a de/het drill card
+    if (card.partOfSpeech === 'noun' && card.article) {
+        drillCards.push({
+            dutch: `de of het? ${card.dutch}`,
+            english: `${card.article} ${card.dutch}`,
+            partOfSpeech: 'article-drill',
+            exampleDutch: '',
+            exampleEnglish: ''
+        });
+    }
+
+    // For verbs: create tense drill cards
+    if (card.partOfSpeech === 'verb' && card.conjugations) {
+        const { present, past, perfect } = card.conjugations;
+        if (present) {
+            drillCards.push({
+                dutch: `tegenwoordige tijd: ${card.dutch}`,
+                english: present,
+                partOfSpeech: 'verb-present',
+                exampleDutch: '',
+                exampleEnglish: ''
+            });
+        }
+        if (past) {
+            drillCards.push({
+                dutch: `verleden tijd: ${card.dutch}`,
+                english: past,
+                partOfSpeech: 'verb-past',
+                exampleDutch: '',
+                exampleEnglish: ''
+            });
+        }
+        if (perfect) {
+            drillCards.push({
+                dutch: `voltooid deelwoord: ${card.dutch}`,
+                english: perfect,
+                partOfSpeech: 'verb-perfect',
+                exampleDutch: '',
+                exampleEnglish: ''
+            });
+        }
+    }
+
+    // Save all drill cards
+    for (const drillCard of drillCards) {
+        try {
+            await saveCard(drillCard);
+        } catch (e) {
+            // Ignore duplicates for drill cards
+            if (e.code !== 'duplicate') throw e;
+        }
+    }
+
+    return drillCards.length;
+}
+
 async function getAllCards() {
     return workerFetch('/cards');
 }
@@ -266,7 +326,9 @@ function initAddForm() {
                 english: result.english,
                 partOfSpeech: result.partOfSpeech,
                 exampleDutch: result.exampleDutch,
-                exampleEnglish: result.exampleEnglish
+                exampleEnglish: result.exampleEnglish,
+                article: result.article,
+                conjugations: result.conjugations
             };
 
             // Show preview
@@ -293,7 +355,9 @@ function initAddForm() {
         if (pendingCard) {
             try {
                 await saveCard(pendingCard);
-                showToast('Card saved!', 'success');
+                const drillCount = await generateDrillCards(pendingCard);
+                const totalCards = 1 + drillCount;
+                showToast(`${totalCards} card${totalCards > 1 ? 's' : ''} saved!`, 'success');
                 previewCard.classList.add('hidden');
                 previewActions.classList.add('hidden');
                 pendingCard = null;
@@ -331,13 +395,22 @@ async function translateWord(word) {
         body: JSON.stringify({ word })
     });
     if (!data.english) throw new Error('Translation service returned no result');
-    return {
+    const result = {
         dutch: word,
         english: String(data.english).trim(),
         partOfSpeech: data.partOfSpeech || 'other',
         exampleDutch: data.dutch ? String(data.dutch).trim() : '',
         exampleEnglish: data.english_translation ? String(data.english_translation).trim() : ''
     };
+    // Include article for nouns
+    if (data.article) {
+        result.article = data.article;
+    }
+    // Include conjugations for verbs
+    if (data.conjugations) {
+        result.conjugations = data.conjugations;
+    }
+    return result;
 }
 
 // Review System
