@@ -1,6 +1,6 @@
 // Dutch Vocab App
 
-const APP_VERSION = '2026.05.11.3';
+const APP_VERSION = '2026.05.11.4';
 // Cloudflare Worker that proxies OpenAI and stores cards in D1.
 const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
 const DAILY_REVIEW_HOUR = 7;
@@ -8,6 +8,7 @@ const DAILY_REVIEW_HOUR = 7;
 let pendingCard = null;
 let reviewQueue = [];
 let currentReviewIndex = 0;
+let currentReviewMode = 'all';
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', async () => {
@@ -494,6 +495,17 @@ function initReview() {
     const reviewCard = document.getElementById('review-card');
     const reviewButtons = document.getElementById('review-buttons');
 
+    // Review mode selector
+    const modeButtons = document.querySelectorAll('.review-mode-btn');
+    modeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            modeButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentReviewMode = btn.dataset.mode;
+            loadReviewCards();
+        });
+    });
+
     reviewCard.addEventListener('click', () => {
         if (reviewCard.classList.contains('switching')) {
             return;
@@ -525,8 +537,22 @@ function initReview() {
     });
 }
 
+function filterCardsByMode(cards, mode) {
+    if (mode === 'all') {
+        return cards;
+    } else if (mode === 'de-het') {
+        return cards.filter(c => c.partOfSpeech === 'article-drill');
+    } else if (mode === 'verb-tenses') {
+        return cards.filter(c => c.partOfSpeech.startsWith('verb-present') ||
+                                 c.partOfSpeech.startsWith('verb-past') ||
+                                 c.partOfSpeech.startsWith('verb-perfect'));
+    }
+    return cards;
+}
+
 async function loadReviewCards() {
-    reviewQueue = await getCardsForReview();
+    let allCards = await getCardsForReview();
+    reviewQueue = filterCardsByMode(allCards, currentReviewMode);
     currentReviewIndex = 0;
 
     const emptyState = document.getElementById('review-empty');
@@ -534,6 +560,11 @@ async function loadReviewCards() {
 
     if (reviewQueue.length === 0) {
         emptyState.classList.remove('hidden');
+        if (currentReviewMode !== 'all') {
+            emptyState.querySelector('p').textContent = `No ${currentReviewMode === 'de-het' ? 'de/het' : 'verb tense'} cards to review!`;
+        } else {
+            emptyState.querySelector('p').textContent = 'No cards to review!';
+        }
         reviewArea.classList.add('hidden');
     } else {
         emptyState.classList.add('hidden');
