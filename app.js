@@ -1,6 +1,6 @@
 // Dutch Vocab App
 
-const APP_VERSION = '2026.05.11.13';
+const APP_VERSION = '2026.05.11.14';
 // Cloudflare Worker that proxies OpenAI and stores cards in D1.
 const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
 const DAILY_REVIEW_HOUR = 7;
@@ -79,13 +79,14 @@ async function generateDrillCards(card) {
     // For verbs: create tense drill cards
     if (card.partOfSpeech === 'verb' && card.conjugations) {
         const { present, presentExample, presentExampleEnglish, past, pastExample, pastExampleEnglish, perfect, perfectExample, perfectExampleEnglish } = card.conjugations;
+        // Only mark past and perfect as irregular (present tense follows regular patterns)
         const irregularSuffix = card.isIrregular ? '-irregular' : '';
 
         if (present) {
             drillCards.push({
                 dutch: `tegenwoordige tijd (present): ${card.dutch}`,
                 english: present,
-                partOfSpeech: `verb-present${irregularSuffix}`,
+                partOfSpeech: 'verb-present',
                 exampleDutch: presentExample || '',
                 exampleEnglish: presentExampleEnglish || ''
             });
@@ -354,13 +355,14 @@ function initAddForm() {
             // Add drill cards for verbs
             if (result.partOfSpeech === 'verb' && result.conjugations) {
                 const { present, presentExample, presentExampleEnglish, past, pastExample, pastExampleEnglish, perfect, perfectExample, perfectExampleEnglish } = result.conjugations;
+                // Only mark past and perfect as irregular (present tense follows regular patterns)
                 const irregularSuffix = result.isIrregular ? '-irregular' : '';
 
                 if (present) {
                     allCards.push({
                         dutch: `tegenwoordige tijd (present): ${result.dutch}`,
                         english: present,
-                        partOfSpeech: `verb-present${irregularSuffix}`,
+                        partOfSpeech: 'verb-present',
                         exampleDutch: presentExample || '',
                         exampleEnglish: presentExampleEnglish || ''
                     });
