@@ -96,10 +96,10 @@ async function handleTranslate(request, env, headers) {
 - If partOfSpeech is "verb": include:
   - "isIrregular": true if the verb is irregular (strong verb), false if regular (weak verb)
   - "conjugations" object with:
-    - present: "ik/jij/hij form, wij form" (e.g. "loop, loopt, lopen")
+    - present: "ik form, jij/hij form, wij form" (e.g. "loop, loopt, lopen"). IMPORTANT: For separable verbs (like opmerken, aansluiten, omslaan), include the separated particle: "merk op, merkt op, merken op"
     - presentExample: a short Dutch sentence using the verb in present tense
     - presentExampleEnglish: English translation of presentExample
-    - past: "singular, plural" (e.g. "liep, liepen")
+    - past: "singular, plural" (e.g. "liep, liepen"). IMPORTANT: For separable verbs, include the particle: "merkte op, merkten op"
     - pastExample: a short Dutch sentence using the verb in past tense
     - pastExampleEnglish: English translation of pastExample
     - perfect: "past participle with hebben or zijn" (e.g. "heb gelopen" or "ben gegaan")
