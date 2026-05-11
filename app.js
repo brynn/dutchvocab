@@ -1,6 +1,6 @@
 // Dutch Vocab App
 
-const APP_VERSION = '2026.05.11.5';
+const APP_VERSION = '2026.05.11.6';
 // Cloudflare Worker that proxies OpenAI and stores cards in D1.
 const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
 const DAILY_REVIEW_HOUR = 7;
@@ -574,6 +574,71 @@ async function loadReviewCards() {
     }
 }
 
+// Format verb tense card front for display
+function formatVerbTenseFront(card) {
+    const pos = card.partOfSpeech;
+    if (!pos.startsWith('verb-present') && !pos.startsWith('verb-past') && !pos.startsWith('verb-perfect')) {
+        return null; // Not a verb tense card
+    }
+
+    // Extract verb name from dutch field (e.g., "tegenwoordige tijd (present): lopen" -> "lopen")
+    const match = card.dutch.match(/:\s*(.+)$/);
+    const verbName = match ? match[1] : card.dutch;
+
+    let tenseLabel, tenseEnglish;
+    if (pos.startsWith('verb-present')) {
+        tenseLabel = 'Tegenwoordige tijd';
+        tenseEnglish = 'Present tense';
+    } else if (pos.startsWith('verb-past')) {
+        tenseLabel = 'Verleden tijd';
+        tenseEnglish = 'Past tense';
+    } else {
+        tenseLabel = 'Voltooid deelwoord';
+        tenseEnglish = 'Perfect tense';
+    }
+
+    return { verbName, tenseLabel, tenseEnglish };
+}
+
+// Format conjugations for table display
+function formatConjugationsTable(card) {
+    const pos = card.partOfSpeech;
+    const conjugations = card.english;
+
+    // Split by comma and clean up
+    const parts = conjugations.split(',').map(p => p.trim());
+
+    if (pos.startsWith('verb-present')) {
+        // Present: typically "ik form, jij form, wij form" or similar
+        if (parts.length >= 3) {
+            return `<table class="conjugation-table">
+                <tr><td class="conj-label">ik</td><td class="conj-value">${parts[0]}</td></tr>
+                <tr><td class="conj-label">jij/hij/zij</td><td class="conj-value">${parts[1]}</td></tr>
+                <tr><td class="conj-label">wij/jullie/zij</td><td class="conj-value">${parts[2]}</td></tr>
+            </table>`;
+        } else if (parts.length === 2) {
+            return `<table class="conjugation-table">
+                <tr><td class="conj-label">singular</td><td class="conj-value">${parts[0]}</td></tr>
+                <tr><td class="conj-label">plural</td><td class="conj-value">${parts[1]}</td></tr>
+            </table>`;
+        }
+    } else if (pos.startsWith('verb-past')) {
+        // Past: typically "singular, plural"
+        if (parts.length >= 2) {
+            return `<table class="conjugation-table">
+                <tr><td class="conj-label">singular</td><td class="conj-value">${parts[0]}</td></tr>
+                <tr><td class="conj-label">plural</td><td class="conj-value">${parts[1]}</td></tr>
+            </table>`;
+        }
+    } else if (pos.startsWith('verb-perfect')) {
+        // Perfect: typically "heb/ben + participle"
+        return `<div class="conjugation-perfect">${conjugations}</div>`;
+    }
+
+    // Fallback: just return the text
+    return `<div class="conjugation-fallback">${conjugations}</div>`;
+}
+
 function showNextCard() {
     const reviewCard = document.getElementById('review-card');
     const reviewButtons = document.getElementById('review-buttons');
@@ -594,8 +659,26 @@ function showNextCard() {
     reviewCard.classList.remove('flipped');
     reviewButtons.classList.add('hidden');
     applyPosClass(reviewCard, card.partOfSpeech);
-    reviewCard.querySelector('.dutch-word').textContent = card.dutch;
-    reviewCard.querySelector('.english-word').textContent = card.english;
+
+    // Check if this is a verb tense card for special formatting
+    const verbTenseInfo = formatVerbTenseFront(card);
+    const dutchWordEl = reviewCard.querySelector('.dutch-word');
+    const englishWordEl = reviewCard.querySelector('.english-word');
+
+    if (verbTenseInfo) {
+        // Verb tense card: show formatted front
+        dutchWordEl.innerHTML = `<span class="verb-tense-label">${verbTenseInfo.tenseLabel}</span>
+            <span class="verb-tense-english">${verbTenseInfo.tenseEnglish}</span>
+            <span class="verb-name">${escapeHtml(verbTenseInfo.verbName)}</span>`;
+
+        // Formatted conjugation table on back
+        englishWordEl.innerHTML = formatConjugationsTable(card);
+    } else {
+        // Regular card
+        dutchWordEl.textContent = card.dutch;
+        englishWordEl.textContent = card.english;
+    }
+
     renderExample(reviewCard, card.exampleDutch, card.exampleEnglish);
 
     document.getElementById('current-card').textContent = currentReviewIndex + 1;

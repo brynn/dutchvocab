@@ -371,6 +371,72 @@ button.secondary {
     font-weight: 600;
 }
 
+/* Verb tense card front styling */
+.verb-tense-label {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+}
+
+.verb-tense-english {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-bottom: 16px;
+}
+
+.verb-name {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* Conjugation table styling */
+.conjugation-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 auto;
+    max-width: 280px;
+}
+
+.conjugation-table tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.conjugation-table tr:last-child {
+    border-bottom: none;
+}
+
+.conj-label {
+    text-align: right;
+    padding: 8px 12px 8px 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    width: 40%;
+}
+
+.conj-value {
+    text-align: left;
+    padding: 8px 0 8px 12px;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.conjugation-perfect {
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.conjugation-fallback {
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
 .tap-hint {
     font-size: 0.85rem;
     color: var(--text-muted);
