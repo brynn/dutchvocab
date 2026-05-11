@@ -297,7 +297,26 @@ button.secondary {
     text-align: center;
     background: var(--card-bg);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border-left: 5px solid var(--primary);
 }
+
+/* Card left border colors by part of speech */
+.pos-noun .card-front, .pos-noun .card-back { border-left-color: var(--pos-noun); }
+.pos-verb .card-front, .pos-verb .card-back { border-left-color: var(--pos-verb); }
+.pos-adjective .card-front, .pos-adjective .card-back { border-left-color: var(--pos-adjective); }
+.pos-adverb .card-front, .pos-adverb .card-back { border-left-color: var(--pos-adverb); }
+.pos-preposition .card-front, .pos-preposition .card-back { border-left-color: var(--pos-preposition); }
+.pos-conjunction .card-front, .pos-conjunction .card-back { border-left-color: var(--pos-conjunction); }
+.pos-pronoun .card-front, .pos-pronoun .card-back { border-left-color: var(--pos-pronoun); }
+.pos-interjection .card-front, .pos-interjection .card-back { border-left-color: var(--pos-interjection); }
+.pos-article .card-front, .pos-article .card-back { border-left-color: var(--pos-article); }
+.pos-article-drill .card-front, .pos-article-drill .card-back { border-left-color: var(--pos-article-drill); }
+.pos-verb-present .card-front, .pos-verb-present .card-back,
+.pos-verb-present-irregular .card-front, .pos-verb-present-irregular .card-back { border-left-color: var(--pos-verb-present); }
+.pos-verb-past .card-front, .pos-verb-past .card-back,
+.pos-verb-past-irregular .card-front, .pos-verb-past-irregular .card-back { border-left-color: var(--pos-verb-past); }
+.pos-verb-perfect .card-front, .pos-verb-perfect .card-back,
+.pos-verb-perfect-irregular .card-front, .pos-verb-perfect-irregular .card-back { border-left-color: var(--pos-verb-perfect); }
 
 .card-back {
     transform: rotateY(180deg);

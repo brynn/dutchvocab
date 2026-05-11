@@ -1,6 +1,6 @@
 // Dutch Vocab App
 
-const APP_VERSION = '2026.05.11.7';
+const APP_VERSION = '2026.05.11.8';
 // Cloudflare Worker that proxies OpenAI and stores cards in D1.
 const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
 const DAILY_REVIEW_HOUR = 7;
@@ -439,7 +439,7 @@ function renderPreviewCards(container, cards) {
         <div class="preview-card-mini ${posClass}" data-index="${i}">
             ${isIrregular ? '<span class="irregular-badge-mini">irregular</span>' : ''}
             <div class="preview-card-front">
-                <span class="pos-badge-mini">${card.partOfSpeech.replace('-irregular', '').replace('-', ' ')}</span>
+                <span class="pos-badge-mini">${getSimplePosLabel(card.partOfSpeech)}</span>
                 <p class="preview-dutch">${escapeHtml(card.dutch)}</p>
             </div>
             <div class="preview-card-back">
@@ -896,9 +896,20 @@ function applyPosClass(element, partOfSpeech) {
     });
     const pos = partOfSpeech || 'other';
     element.classList.add(`pos-${pos}`);
-    // Update badge text if present
+    // Update badge text if present - show simplified category
     const badge = element.querySelector('.pos-badge');
-    if (badge) badge.textContent = pos;
+    if (badge) badge.textContent = getSimplePosLabel(pos);
+}
+
+// Get simplified part of speech label for display
+function getSimplePosLabel(pos) {
+    if (pos.startsWith('verb-present') || pos.startsWith('verb-past') || pos.startsWith('verb-perfect')) {
+        return 'verb';
+    }
+    if (pos === 'article-drill') {
+        return 'de/het';
+    }
+    return pos.replace('-irregular', '');
 }
 
 // Register service worker
