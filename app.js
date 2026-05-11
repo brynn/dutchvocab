@@ -1,6 +1,6 @@
 // Dutch Vocab App
 
-const APP_VERSION = '2026.05.11.9';
+const APP_VERSION = '2026.05.11.10';
 // Cloudflare Worker that proxies OpenAI and stores cards in D1.
 const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
 const DAILY_REVIEW_HOUR = 7;
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initCardList();
     initBackupControls();
     initLegend();
+    initCardViewModal();
 });
 
 // Card CRUD operations - all backed by the Worker / D1.
@@ -663,6 +664,24 @@ function formatConjugationsTable(card) {
     return `<div class="conjugation-fallback">${conjugations}</div>`;
 }
 
+// Format de/het card for display
+function formatDeHetCard(card) {
+    if (card.partOfSpeech !== 'article-drill') {
+        return null;
+    }
+
+    // Extract noun from "de of het? [noun]"
+    const match = card.dutch.match(/de of het\?\s+(.+)/i);
+    const nounWord = match ? match[1] : card.dutch;
+
+    // Parse the answer: "de/het noun (english)"
+    const answerMatch = card.english.match(/^(de|het)\s+\S+\s*\((.+)\)$/i);
+    const article = answerMatch ? answerMatch[1] : card.english.split(' ')[0];
+    const englishTranslation = answerMatch ? answerMatch[2] : '';
+
+    return { nounWord, article, englishTranslation };
+}
+
 function showNextCard() {
     const reviewCard = document.getElementById('review-card');
     const reviewButtons = document.getElementById('review-buttons');
@@ -684,8 +703,9 @@ function showNextCard() {
     reviewButtons.classList.add('hidden');
     applyPosClass(reviewCard, card.partOfSpeech);
 
-    // Check if this is a verb tense card for special formatting
+    // Check if this is a verb tense card or de/het card for special formatting
     const verbTenseInfo = formatVerbTenseFront(card);
+    const deHetInfo = formatDeHetCard(card);
     const dutchWordEl = reviewCard.querySelector('.dutch-word');
     const englishWordEl = reviewCard.querySelector('.english-word');
 
@@ -697,6 +717,13 @@ function showNextCard() {
 
         // Formatted conjugation table on back
         englishWordEl.innerHTML = formatConjugationsTable(card);
+    } else if (deHetInfo) {
+        // de/het card: show noun prominently
+        dutchWordEl.innerHTML = `<span class="dehet-noun">${escapeHtml(deHetInfo.nounWord)}</span>`;
+
+        // Show article + noun with translation on back
+        englishWordEl.innerHTML = `<span class="dehet-answer">${escapeHtml(deHetInfo.article)} ${escapeHtml(deHetInfo.nounWord)}</span>
+            ${deHetInfo.englishTranslation ? `<span class="dehet-english">${escapeHtml(deHetInfo.englishTranslation)}</span>` : ''}`;
     } else {
         // Regular card
         dutchWordEl.textContent = card.dutch;
@@ -742,6 +769,59 @@ function initLegend() {
     });
 }
 
+function initCardViewModal() {
+    const modal = document.getElementById('card-view-modal');
+    const closeBtn = document.getElementById('close-card-view');
+    const viewCard = document.getElementById('view-card');
+    const overlay = modal.querySelector('.card-view-overlay');
+
+    closeBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        viewCard.classList.remove('flipped');
+    });
+
+    overlay.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        viewCard.classList.remove('flipped');
+    });
+
+    viewCard.addEventListener('click', () => {
+        viewCard.classList.toggle('flipped');
+    });
+}
+
+function showCardViewModal(card) {
+    const modal = document.getElementById('card-view-modal');
+    const viewCard = document.getElementById('view-card');
+
+    applyPosClass(viewCard, card.partOfSpeech);
+    viewCard.classList.remove('flipped');
+
+    const dutchWordEl = viewCard.querySelector('.dutch-word');
+    const englishWordEl = viewCard.querySelector('.english-word');
+
+    // Check for special card types
+    const verbTenseInfo = formatVerbTenseFront(card);
+    const deHetInfo = formatDeHetCard(card);
+
+    if (verbTenseInfo) {
+        dutchWordEl.innerHTML = `<span class="verb-tense-label">${verbTenseInfo.tenseLabel}</span>
+            <span class="verb-tense-english">${verbTenseInfo.tenseEnglish}</span>
+            <span class="verb-name">${escapeHtml(verbTenseInfo.verbName)}</span>`;
+        englishWordEl.innerHTML = formatConjugationsTable(card);
+    } else if (deHetInfo) {
+        dutchWordEl.innerHTML = `<span class="dehet-noun">${escapeHtml(deHetInfo.nounWord)}</span>`;
+        englishWordEl.innerHTML = `<span class="dehet-answer">${escapeHtml(deHetInfo.article)} ${escapeHtml(deHetInfo.nounWord)}</span>
+            ${deHetInfo.englishTranslation ? `<span class="dehet-english">${escapeHtml(deHetInfo.englishTranslation)}</span>` : ''}`;
+    } else {
+        dutchWordEl.textContent = card.dutch;
+        englishWordEl.textContent = card.english;
+    }
+
+    renderExample(viewCard, card.exampleDutch, card.exampleEnglish);
+    modal.classList.remove('hidden');
+}
+
 async function loadCardList() {
     const cards = await getAllCards();
     const listContainer = document.getElementById('card-list');
@@ -758,21 +838,33 @@ async function loadCardList() {
     // Sort by creation date (newest first)
     cards.sort((a, b) => b.createdAt - a.createdAt);
 
-    listContainer.innerHTML = cards.map(card => {
+    // Store cards for click handler
+    window.cardListData = cards;
+
+    listContainer.innerHTML = cards.map((card, index) => {
         const posClass = `pos-${card.partOfSpeech || 'other'}`;
         const exampleDutch = card.exampleDutch ? `<div class="list-card-example-dutch">${escapeHtml(card.exampleDutch)}</div>` : '';
         const exampleEnglish = card.exampleEnglish ? `<div class="list-card-example-english">${escapeHtml(card.exampleEnglish)}</div>` : '';
         return `
-        <div class="list-card ${posClass}" data-id="${card.id}">
+        <div class="list-card ${posClass}" data-id="${card.id}" data-index="${index}">
             <div class="list-card-content">
                 <div class="list-card-dutch">${escapeHtml(card.dutch)}</div>
                 <div class="list-card-english">${escapeHtml(card.english)}</div>
                 ${exampleDutch}
                 ${exampleEnglish}
             </div>
-            <button class="list-card-delete" onclick="handleDeleteCard(${card.id})">🗑️</button>
+            <button class="list-card-delete" onclick="event.stopPropagation(); handleDeleteCard(${card.id})">🗑️</button>
         </div>`;
     }).join('');
+
+    // Add click handlers to list cards
+    listContainer.querySelectorAll('.list-card').forEach(el => {
+        el.addEventListener('click', (e) => {
+            if (e.target.classList.contains('list-card-delete')) return;
+            const index = parseInt(el.dataset.index);
+            showCardViewModal(window.cardListData[index]);
+        });
+    });
 }
 
 function renderExample(cardEl, exampleDutch, exampleEnglish) {

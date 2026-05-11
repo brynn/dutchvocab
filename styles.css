@@ -480,6 +480,27 @@ button.secondary {
     font-weight: 600;
 }
 
+/* de/het card styling */
+.dehet-noun {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.dehet-answer {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.dehet-english {
+    display: block;
+    font-size: 1rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 .tap-hint {
     font-size: 0.85rem;
     color: var(--text-muted);
@@ -704,6 +725,12 @@ button.secondary {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.list-card:hover {
+    background: var(--bg-light);
 }
 
 .list-card-content {
@@ -791,6 +818,31 @@ button.secondary {
 .modal-content h2 {
     margin-bottom: 20px;
     color: var(--primary);
+}
+
+/* Card View Modal */
+.card-view-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.card-view-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    padding: 16px;
+}
+
+.card-view-container .card {
+    margin: 0 0 16px 0;
+}
+
+#close-card-view {
+    width: 100%;
 }
 
 .modal-content label {

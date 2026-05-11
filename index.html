@@ -138,6 +138,29 @@
             <div id="card-list"></div>
         </section>
 
+        <!-- Card View Modal -->
+        <div id="card-view-modal" class="modal hidden">
+            <div class="card-view-overlay"></div>
+            <div class="card-view-container">
+                <div id="view-card" class="card">
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <span class="irregular-badge"></span>
+                            <span class="pos-badge"></span>
+                            <p class="dutch-word"></p>
+                            <p class="tap-hint">Tap to flip</p>
+                        </div>
+                        <div class="card-back">
+                            <p class="english-word"></p>
+                            <p class="example-dutch hidden"></p>
+                            <p class="example-english hidden"></p>
+                        </div>
+                    </div>
+                </div>
+                <button id="close-card-view" class="secondary">Close</button>
+            </div>
+        </div>
+
         <!-- Toast Notifications -->
         <div id="toast" class="toast hidden"></div>
     </div>
