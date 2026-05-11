@@ -224,7 +224,7 @@ async function bulkReplaceCards(request, env, headers) {
 
 function sanitizeCard(raw) {
     const now = Date.now();
-    const validPOS = ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'conjunction', 'pronoun', 'interjection', 'article', 'other', 'article-drill', 'verb-present', 'verb-past', 'verb-perfect'];
+    const validPOS = ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'conjunction', 'pronoun', 'interjection', 'article', 'other', 'article-drill', 'verb-present', 'verb-past', 'verb-perfect', 'verb-present-irregular', 'verb-past-irregular', 'verb-perfect-irregular'];
     const pos = String(raw.partOfSpeech || '').trim().toLowerCase();
     return {
         dutch: String(raw.dutch || '').trim(),

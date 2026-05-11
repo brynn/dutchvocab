@@ -1,6 +1,6 @@
 // Dutch Vocab App
 
-const APP_VERSION = '2026.05.11.2';
+const APP_VERSION = '2026.05.11.3';
 // Cloudflare Worker that proxies OpenAI and stores cards in D1.
 const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
 const DAILY_REVIEW_HOUR = 7;
@@ -76,31 +76,31 @@ async function generateDrillCards(card) {
     // For verbs: create tense drill cards
     if (card.partOfSpeech === 'verb' && card.conjugations) {
         const { present, presentExample, presentExampleEnglish, past, pastExample, pastExampleEnglish, perfect, perfectExample, perfectExampleEnglish } = card.conjugations;
-        const irregularLabel = card.isIrregular ? ' [irregular]' : ' [regular]';
+        const irregularSuffix = card.isIrregular ? '-irregular' : '';
 
         if (present) {
             drillCards.push({
-                dutch: `tegenwoordige tijd (present)${irregularLabel}: ${card.dutch}`,
+                dutch: `tegenwoordige tijd (present): ${card.dutch}`,
                 english: present,
-                partOfSpeech: 'verb-present',
+                partOfSpeech: `verb-present${irregularSuffix}`,
                 exampleDutch: presentExample || '',
                 exampleEnglish: presentExampleEnglish || ''
             });
         }
         if (past) {
             drillCards.push({
-                dutch: `verleden tijd (past)${irregularLabel}: ${card.dutch}`,
+                dutch: `verleden tijd (past): ${card.dutch}`,
                 english: past,
-                partOfSpeech: 'verb-past',
+                partOfSpeech: `verb-past${irregularSuffix}`,
                 exampleDutch: pastExample || '',
                 exampleEnglish: pastExampleEnglish || ''
             });
         }
         if (perfect) {
             drillCards.push({
-                dutch: `voltooid deelwoord (perfect)${irregularLabel}: ${card.dutch}`,
+                dutch: `voltooid deelwoord (perfect): ${card.dutch}`,
                 english: perfect,
-                partOfSpeech: 'verb-perfect',
+                partOfSpeech: `verb-perfect${irregularSuffix}`,
                 exampleDutch: perfectExample || '',
                 exampleEnglish: perfectExampleEnglish || ''
             });
@@ -307,7 +307,7 @@ function initVersionBadge() {
 // Add Word Form
 function initAddForm() {
     const form = document.getElementById('add-form');
-    const previewCard = document.getElementById('preview-card');
+    const previewContainer = document.getElementById('preview-cards-container');
     const previewActions = document.getElementById('preview-actions');
     const saveBtn = document.getElementById('save-card-btn');
     const discardBtn = document.getElementById('discard-card-btn');
@@ -330,15 +330,61 @@ function initAddForm() {
                 exampleDutch: result.exampleDutch,
                 exampleEnglish: result.exampleEnglish,
                 article: result.article,
-                conjugations: result.conjugations
+                conjugations: result.conjugations,
+                isIrregular: result.isIrregular
             };
 
-            // Show preview
-            applyPosClass(previewCard, result.partOfSpeech);
-            previewCard.querySelector('.dutch-word').textContent = result.dutch;
-            previewCard.querySelector('.english-word').textContent = result.english;
-            renderExample(previewCard, result.exampleDutch, result.exampleEnglish);
-            previewCard.classList.remove('hidden', 'flipped');
+            // Build list of all cards that will be created
+            const allCards = [pendingCard];
+
+            // Add drill cards for nouns
+            if (result.partOfSpeech === 'noun' && result.article) {
+                allCards.push({
+                    dutch: `de of het? ${result.dutch}`,
+                    english: `${result.article} ${result.dutch}`,
+                    partOfSpeech: 'article-drill',
+                    exampleDutch: '',
+                    exampleEnglish: ''
+                });
+            }
+
+            // Add drill cards for verbs
+            if (result.partOfSpeech === 'verb' && result.conjugations) {
+                const { present, presentExample, presentExampleEnglish, past, pastExample, pastExampleEnglish, perfect, perfectExample, perfectExampleEnglish } = result.conjugations;
+                const irregularSuffix = result.isIrregular ? '-irregular' : '';
+
+                if (present) {
+                    allCards.push({
+                        dutch: `tegenwoordige tijd (present): ${result.dutch}`,
+                        english: present,
+                        partOfSpeech: `verb-present${irregularSuffix}`,
+                        exampleDutch: presentExample || '',
+                        exampleEnglish: presentExampleEnglish || ''
+                    });
+                }
+                if (past) {
+                    allCards.push({
+                        dutch: `verleden tijd (past): ${result.dutch}`,
+                        english: past,
+                        partOfSpeech: `verb-past${irregularSuffix}`,
+                        exampleDutch: pastExample || '',
+                        exampleEnglish: pastExampleEnglish || ''
+                    });
+                }
+                if (perfect) {
+                    allCards.push({
+                        dutch: `voltooid deelwoord (perfect): ${result.dutch}`,
+                        english: perfect,
+                        partOfSpeech: `verb-perfect${irregularSuffix}`,
+                        exampleDutch: perfectExample || '',
+                        exampleEnglish: perfectExampleEnglish || ''
+                    });
+                }
+            }
+
+            // Render all preview cards
+            renderPreviewCards(previewContainer, allCards);
+            previewContainer.classList.remove('hidden');
             previewActions.classList.remove('hidden');
 
             input.value = '';
@@ -349,10 +395,6 @@ function initAddForm() {
         }
     });
 
-    previewCard.addEventListener('click', () => {
-        previewCard.classList.toggle('flipped');
-    });
-
     saveBtn.addEventListener('click', async () => {
         if (pendingCard) {
             try {
@@ -360,7 +402,7 @@ function initAddForm() {
                 const drillCount = await generateDrillCards(pendingCard);
                 const totalCards = 1 + drillCount;
                 showToast(`${totalCards} card${totalCards > 1 ? 's' : ''} saved!`, 'success');
-                previewCard.classList.add('hidden');
+                previewContainer.classList.add('hidden');
                 previewActions.classList.add('hidden');
                 pendingCard = null;
             } catch (error) {
@@ -374,10 +416,34 @@ function initAddForm() {
     });
 
     discardBtn.addEventListener('click', () => {
-        previewCard.classList.add('hidden');
+        previewContainer.classList.add('hidden');
         previewActions.classList.add('hidden');
         pendingCard = null;
     });
+}
+
+function renderPreviewCards(container, cards) {
+    container.innerHTML = cards.map((card, i) => {
+        const posClass = `pos-${card.partOfSpeech}`;
+        const isIrregular = card.partOfSpeech.includes('-irregular');
+        const exampleHtml = card.exampleDutch ? `
+            <p class="example-dutch">${escapeHtml(card.exampleDutch)}</p>
+            <p class="example-english">${escapeHtml(card.exampleEnglish)}</p>
+        ` : '';
+
+        return `
+        <div class="preview-card-mini ${posClass}" data-index="${i}">
+            ${isIrregular ? '<span class="irregular-badge-mini">irregular</span>' : ''}
+            <div class="preview-card-front">
+                <span class="pos-badge-mini">${card.partOfSpeech.replace('-irregular', '').replace('-', ' ')}</span>
+                <p class="preview-dutch">${escapeHtml(card.dutch)}</p>
+            </div>
+            <div class="preview-card-back">
+                <p class="preview-english">${escapeHtml(card.english)}</p>
+                ${exampleHtml}
+            </div>
+        </div>`;
+    }).join('');
 }
 
 function setLoading(loading) {

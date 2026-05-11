@@ -336,6 +336,35 @@ button.secondary {
 .pos-verb-present .pos-badge { background: var(--pos-verb-present); color: white; }
 .pos-verb-past .pos-badge { background: var(--pos-verb-past); color: white; }
 .pos-verb-perfect .pos-badge { background: var(--pos-verb-perfect); color: white; }
+.pos-verb-present-irregular .pos-badge { background: var(--pos-verb-present); color: white; }
+.pos-verb-past-irregular .pos-badge { background: var(--pos-verb-past); color: white; }
+.pos-verb-perfect-irregular .pos-badge { background: var(--pos-verb-perfect); color: white; }
+
+/* Irregular verb corner badge */
+.irregular-badge {
+    display: none;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--danger);
+    color: white;
+}
+
+.irregular-badge::after {
+    content: 'irregular';
+}
+
+.pos-verb-present-irregular .irregular-badge,
+.pos-verb-past-irregular .irregular-badge,
+.pos-verb-perfect-irregular .irregular-badge {
+    display: block;
+}
 
 .english-word {
     font-size: 1.5rem;
@@ -379,10 +408,85 @@ button.secondary {
 #preview-actions {
     display: flex;
     gap: 12px;
+    margin-top: 16px;
 }
 
 #preview-actions button {
     flex: 1;
+}
+
+/* Preview Cards Container */
+#preview-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.preview-card-mini {
+    position: relative;
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    border-left: 4px solid var(--primary);
+}
+
+.preview-card-mini.pos-noun { border-left-color: var(--pos-noun); }
+.preview-card-mini.pos-verb { border-left-color: var(--pos-verb); }
+.preview-card-mini.pos-adjective { border-left-color: var(--pos-adjective); }
+.preview-card-mini.pos-adverb { border-left-color: var(--pos-adverb); }
+.preview-card-mini.pos-article-drill { border-left-color: var(--pos-article-drill); }
+.preview-card-mini.pos-verb-present,
+.preview-card-mini.pos-verb-present-irregular { border-left-color: var(--pos-verb-present); }
+.preview-card-mini.pos-verb-past,
+.preview-card-mini.pos-verb-past-irregular { border-left-color: var(--pos-verb-past); }
+.preview-card-mini.pos-verb-perfect,
+.preview-card-mini.pos-verb-perfect-irregular { border-left-color: var(--pos-verb-perfect); }
+
+.irregular-badge-mini {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: var(--danger);
+    color: white;
+}
+
+.pos-badge-mini {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.preview-dutch {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.preview-english {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.preview-card-mini .example-dutch {
+    margin-top: 8px;
+    font-size: 0.8rem;
+}
+
+.preview-card-mini .example-english {
+    font-size: 0.75rem;
 }
 
 /* Review Area */
