@@ -71,7 +71,10 @@
                 </button>
             </form>
             <div id="preview-actions" class="hidden">
-                <button id="save-card-btn" class="primary">Save</button>
+                <button id="save-card-btn" class="primary">
+                    <span class="btn-text">Save</span>
+                    <span class="btn-loading hidden">Saving...</span>
+                </button>
                 <button id="discard-card-btn" class="secondary">Discard</button>
             </div>
             <div id="preview-cards-container" class="hidden"></div>
@@ -84,7 +87,11 @@
                 <button class="review-mode-btn" data-mode="de-het">de/het</button>
                 <button class="review-mode-btn" data-mode="verb-tenses">Verb Tenses</button>
             </div>
-            <div id="review-empty" class="empty-state">
+            <div id="review-loading" class="loading-state hidden">
+                <div class="loading-spinner"></div>
+                <p>Loading cards...</p>
+            </div>
+            <div id="review-empty" class="empty-state hidden">
                 <p>No cards to review!</p>
                 <p class="subtitle">Add some words to get started.</p>
             </div>

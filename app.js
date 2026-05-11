@@ -1,6 +1,6 @@
 // Dutch Vocab App
 
-const APP_VERSION = '2026.05.11.6';
+const APP_VERSION = '2026.05.11.7';
 // Cloudflare Worker that proxies OpenAI and stores cards in D1.
 const WORKER_URL = 'https://dutchvocab-proxy.dutchvocab.workers.dev';
 const DAILY_REVIEW_HOUR = 7;
@@ -67,7 +67,7 @@ async function generateDrillCards(card) {
     if (card.partOfSpeech === 'noun' && card.article) {
         drillCards.push({
             dutch: `de of het? ${card.dutch}`,
-            english: `${card.article} ${card.dutch}`,
+            english: `${card.article} ${card.dutch} (${card.english})`,
             partOfSpeech: 'article-drill',
             exampleDutch: '',
             exampleEnglish: ''
@@ -342,7 +342,7 @@ function initAddForm() {
             if (result.partOfSpeech === 'noun' && result.article) {
                 allCards.push({
                     dutch: `de of het? ${result.dutch}`,
-                    english: `${result.article} ${result.dutch}`,
+                    english: `${result.article} ${result.dutch} (${result.english})`,
                     partOfSpeech: 'article-drill',
                     exampleDutch: '',
                     exampleEnglish: ''
@@ -398,6 +398,7 @@ function initAddForm() {
 
     saveBtn.addEventListener('click', async () => {
         if (pendingCard) {
+            setSaveLoading(true);
             try {
                 await saveCard(pendingCard);
                 const drillCount = await generateDrillCards(pendingCard);
@@ -412,6 +413,8 @@ function initAddForm() {
                 } else {
                     showToast(error.message || 'Failed to save card', 'error');
                 }
+            } finally {
+                setSaveLoading(false);
             }
         }
     });
@@ -453,6 +456,18 @@ function setLoading(loading) {
     const btnLoading = btn.querySelector('.btn-loading');
 
     btn.disabled = loading;
+    btnText.classList.toggle('hidden', loading);
+    btnLoading.classList.toggle('hidden', !loading);
+}
+
+function setSaveLoading(loading) {
+    const btn = document.getElementById('save-card-btn');
+    const btnText = btn.querySelector('.btn-text');
+    const btnLoading = btn.querySelector('.btn-loading');
+    const discardBtn = document.getElementById('discard-card-btn');
+
+    btn.disabled = loading;
+    discardBtn.disabled = loading;
     btnText.classList.toggle('hidden', loading);
     btnLoading.classList.toggle('hidden', !loading);
 }
@@ -551,12 +566,21 @@ function filterCardsByMode(cards, mode) {
 }
 
 async function loadReviewCards() {
+    const loadingState = document.getElementById('review-loading');
+    const emptyState = document.getElementById('review-empty');
+    const reviewArea = document.getElementById('review-area');
+
+    // Show loading, hide others
+    loadingState.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+    reviewArea.classList.add('hidden');
+
     let allCards = await getCardsForReview();
     reviewQueue = filterCardsByMode(allCards, currentReviewMode);
     currentReviewIndex = 0;
 
-    const emptyState = document.getElementById('review-empty');
-    const reviewArea = document.getElementById('review-area');
+    // Hide loading
+    loadingState.classList.add('hidden');
 
     if (reviewQueue.length === 0) {
         emptyState.classList.remove('hidden');

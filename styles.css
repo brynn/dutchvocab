@@ -229,6 +229,27 @@ button.secondary {
     }
 }
 
+/* Loading state */
+.loading-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+}
+
+.loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--bg-light);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+}
+
+.loading-state p {
+    font-size: 0.9rem;
+}
+
 .hidden {
     display: none !important;
 }
@@ -306,6 +327,9 @@ button.secondary {
 .pos-verb-present .dutch-word { color: var(--pos-verb-present); }
 .pos-verb-past .dutch-word { color: var(--pos-verb-past); }
 .pos-verb-perfect .dutch-word { color: var(--pos-verb-perfect); }
+.pos-verb-present-irregular .dutch-word { color: var(--pos-verb-present); }
+.pos-verb-past-irregular .dutch-word { color: var(--pos-verb-past); }
+.pos-verb-perfect-irregular .dutch-word { color: var(--pos-verb-perfect); }
 
 /* Part of speech badge */
 .pos-badge {
@@ -690,6 +714,9 @@ button.secondary {
 .list-card.pos-verb-present .list-card-dutch { color: var(--pos-verb-present); }
 .list-card.pos-verb-past .list-card-dutch { color: var(--pos-verb-past); }
 .list-card.pos-verb-perfect .list-card-dutch { color: var(--pos-verb-perfect); }
+.list-card.pos-verb-present-irregular .list-card-dutch { color: var(--pos-verb-present); }
+.list-card.pos-verb-past-irregular .list-card-dutch { color: var(--pos-verb-past); }
+.list-card.pos-verb-perfect-irregular .list-card-dutch { color: var(--pos-verb-perfect); }
 
 .list-card-english {
     font-size: 0.9rem;
